@@ -37,7 +37,7 @@ export function VideoDropzone({ onFileSelected }: VideoDropzoneProps) {
       }`}
     >
       <div className="text-3xl mb-2">📁</div>
-      <p className="text-sm text-zinc-300">Drag &amp; drop video or tap to select</p>
+      <p className="text-sm text-zinc-300">영상을 끌어놓거나 탭하여 선택하세요</p>
       <p className="text-xs text-zinc-500 mt-1">MP4, MOV, WebM</p>
       <input type="file" accept="video/*" onChange={handleChange} className="hidden" />
     </label>

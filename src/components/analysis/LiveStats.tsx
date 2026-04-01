@@ -13,10 +13,10 @@ export function LiveStats({ repCount, currentSet, alerts }: LiveStatsProps) {
     <div className="flex items-center justify-between bg-zinc-900/80 backdrop-blur rounded-xl p-3">
       <div className="text-center">
         <div className="text-3xl font-bold tabular-nums">{repCount}</div>
-        <div className="text-xs text-zinc-500">Reps</div>
+        <div className="text-xs text-zinc-500">회</div>
       </div>
       <div className="text-center">
-        <div className="text-xl font-semibold text-zinc-300">Set {currentSet}</div>
+        <div className="text-xl font-semibold text-zinc-300">{currentSet} 세트</div>
       </div>
       {latestAlert && (
         <div

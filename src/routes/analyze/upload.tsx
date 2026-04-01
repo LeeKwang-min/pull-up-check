@@ -125,13 +125,13 @@ function UploadAnalysisPage() {
             <LandmarkOverlay landmarks={landmarks} width={dimensions.width} height={dimensions.height} />
           </div>
           {analyzing ? (
-            <ProgressBar percent={progress} label="Analyzing video..." />
+            <ProgressBar percent={progress} label="영상 분석 중..." />
           ) : (
             <button
               onClick={handleAnalyze}
               className="w-full bg-blue-600 hover:bg-blue-500 text-white font-semibold py-3 rounded-xl transition-colors"
             >
-              Start Analysis
+              분석 시작
             </button>
           )}
         </>

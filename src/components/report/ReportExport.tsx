@@ -28,11 +28,11 @@ export function ReportExport({ targetRef }: ReportExportProps) {
   return (
     <div className="flex gap-2">
       <button onClick={handleSaveImage} className="flex-1 bg-zinc-800 hover:bg-zinc-700 text-zinc-200 font-medium py-2.5 rounded-lg text-sm transition-colors">
-        Save Image
+        이미지 저장
       </button>
       {typeof navigator !== 'undefined' && 'share' in navigator && (
         <button onClick={handleShare} className="flex-1 bg-blue-600 hover:bg-blue-500 text-white font-medium py-2.5 rounded-lg text-sm transition-colors">
-          Share
+          공유
         </button>
       )}
     </div>

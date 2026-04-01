@@ -18,7 +18,7 @@ function generateFeedback(sets: SetData[]): Feedback[] {
     const last = sets[sets.length - 1].reps.length;
     if (first > last) {
       const avgDrop = (first - last) / (sets.length - 1);
-      feedback.push({ text: `Average rep count decreased by ${avgDrop.toFixed(1)} reps per set`, severity: 'info' });
+      feedback.push({ text: `세트당 평균 ${avgDrop.toFixed(1)}회씩 횟수가 감소했습니다`, severity: 'info' });
     }
   }
 
@@ -26,18 +26,18 @@ function generateFeedback(sets: SetData[]): Feedback[] {
     const scores = set.reps.map((r) => r.formScore);
     for (let i = 1; i < scores.length; i++) {
       if (scores[i] < 60 && scores[i - 1] >= 60) {
-        feedback.push({ text: `Set ${set.setNumber}: Form started breaking from rep ${i + 1}`, severity: 'medium' });
+        feedback.push({ text: `세트 ${set.setNumber}: ${i + 1}회차부터 자세가 무너지기 시작했습니다`, severity: 'medium' });
         break;
       }
     }
   });
 
   const allIssues = sets.flatMap((s) => s.reps.flatMap((r) => r.issues));
-  const shoulderIssues = allIssues.filter((i) => i.type === 'asymmetry' && i.detail.includes('shoulder'));
+  const shoulderIssues = allIssues.filter((i) => i.type === 'asymmetry' && i.detail.includes('어깨'));
   if (shoulderIssues.length > 0) {
     const avgAsym = shoulderIssues.reduce((sum, i) => sum + Math.abs(i.values.shoulderAsymmetry ?? 0), 0) / shoulderIssues.length;
-    const side = shoulderIssues[0].detail.includes('left') ? 'Left' : 'Right';
-    feedback.push({ text: `${side} shoulder was ${avgAsym.toFixed(1)}% lower on average`, severity: avgAsym > 10 ? 'high' : 'medium' });
+    const side = (shoulderIssues[0].values.leftSide ?? 0) > 0 ? '왼쪽' : '오른쪽';
+    feedback.push({ text: `${side} 어깨가 평균 ${avgAsym.toFixed(1)}% 낮았습니다`, severity: avgAsym > 10 ? 'high' : 'medium' });
   }
 
   return feedback;
@@ -53,11 +53,11 @@ const severityStyles = {
 export function FeedbackList({ sets }: FeedbackListProps) {
   const feedback = generateFeedback(sets);
   if (feedback.length === 0) {
-    return <div className="bg-zinc-900 rounded-xl p-4 text-center text-zinc-500 text-sm">Great form! No issues detected.</div>;
+    return <div className="bg-zinc-900 rounded-xl p-4 text-center text-zinc-500 text-sm">훌륭한 자세! 감지된 문제가 없습니다.</div>;
   }
   return (
     <div className="space-y-2">
-      <h3 className="text-sm font-semibold text-zinc-300">Improvement Feedback</h3>
+      <h3 className="text-sm font-semibold text-zinc-300">개선 피드백</h3>
       {feedback.map((fb, i) => (
         <div key={i} className={`border rounded-lg px-3 py-2 text-sm ${severityStyles[fb.severity]}`}>{fb.text}</div>
       ))}

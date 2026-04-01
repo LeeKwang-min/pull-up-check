@@ -42,7 +42,7 @@ describe('FormAnalyzer — front/back', () => {
     const analyzer = new FormAnalyzer('back');
     const issues = analyzer.analyze(asymmetricLandmarks());
     const shoulderIssue = issues.find(
-      (i) => i.type === 'asymmetry' && i.detail.includes('shoulder'),
+      (i) => i.type === 'asymmetry' && i.detail.includes('어깨'),
     );
     expect(shoulderIssue).toBeDefined();
     expect(shoulderIssue!.severity).toBe('medium');

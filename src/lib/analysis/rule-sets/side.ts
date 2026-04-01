@@ -23,7 +23,7 @@ export function analyzeSide(landmarks: LandmarkSnapshot): FormIssue[] {
     issues.push({
       type: 'body_swing',
       severity: swing > 0.15 ? 'high' : swing > 0.1 ? 'medium' : 'low',
-      detail: `Body swing detected: ${(swing * 100).toFixed(1)}% displacement`,
+      detail: `몸통 흔들림 감지: ${(swing * 100).toFixed(1)}% 변위`,
       values: { swingAmount: swing },
     });
   }
@@ -36,7 +36,7 @@ export function analyzeSide(landmarks: LandmarkSnapshot): FormIssue[] {
     issues.push({
       type: 'kipping',
       severity: 'medium',
-      detail: 'Possible kipping: knees raised toward hips',
+      detail: '키핑 의심: 무릎이 엉덩이 쪽으로 올라감',
       values: { hipKneeDistance: hipKneeAngleProxy },
     });
   }

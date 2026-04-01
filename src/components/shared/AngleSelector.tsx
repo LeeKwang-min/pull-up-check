@@ -6,9 +6,9 @@ interface AngleSelectorProps {
 }
 
 const options: { value: CameraAngle; label: string; description: string }[] = [
-  { value: 'front', label: 'Front', description: 'Left/right balance' },
-  { value: 'back', label: 'Back', description: 'Left/right balance' },
-  { value: 'side', label: 'Side', description: 'ROM & kipping' },
+  { value: 'front', label: '정면', description: '좌/우 밸런스' },
+  { value: 'back', label: '후면', description: '좌/우 밸런스' },
+  { value: 'side', label: '측면', description: '가동범위 & 키핑' },
 ];
 
 export function AngleSelector({ value, onChange }: AngleSelectorProps) {

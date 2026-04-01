@@ -1,10 +1,10 @@
 import { Link, useRouterState } from '@tanstack/react-router';
 
 const navItems = [
-  { to: '/', label: 'Home', icon: '⌂' },
-  { to: '/analyze', label: 'Analyze', icon: '◎' },
-  { to: '/history', label: 'History', icon: '☰' },
-  { to: '/settings', label: 'Settings', icon: '⚙' },
+  { to: '/', label: '홈', icon: '⌂' },
+  { to: '/analyze', label: '분석', icon: '◎' },
+  { to: '/history', label: '기록', icon: '☰' },
+  { to: '/settings', label: '설정', icon: '⚙' },
 ] as const;
 
 export function BottomNav() {

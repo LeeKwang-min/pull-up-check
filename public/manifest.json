@@ -1,7 +1,7 @@
 {
-  "name": "Pull-Up Check",
-  "short_name": "PullUpCheck",
-  "description": "AI-powered pull-up form analysis",
+  "name": "풀업 체크",
+  "short_name": "풀업체크",
+  "description": "AI 기반 턱걸이 자세 분석",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#09090b",

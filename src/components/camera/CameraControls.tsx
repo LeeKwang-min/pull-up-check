@@ -13,7 +13,7 @@ export function CameraControls({ isAnalyzing, onStartStop, onNextSet, onFinish }
         disabled={!isAnalyzing}
         className="bg-zinc-800 hover:bg-zinc-700 disabled:opacity-30 text-zinc-200 font-medium py-2 px-4 rounded-lg text-sm transition-colors"
       >
-        Next Set
+        다음 세트
       </button>
       <button
         onClick={onStartStop}
@@ -23,13 +23,13 @@ export function CameraControls({ isAnalyzing, onStartStop, onNextSet, onFinish }
             : 'bg-blue-600 hover:bg-blue-500 text-white ring-4 ring-blue-600/30'
         }`}
       >
-        {isAnalyzing ? 'STOP' : 'START'}
+        {isAnalyzing ? '정지' : '시작'}
       </button>
       <button
         onClick={onFinish}
         className="bg-zinc-800 hover:bg-zinc-700 text-zinc-200 font-medium py-2 px-4 rounded-lg text-sm transition-colors"
       >
-        Finish
+        완료
       </button>
     </div>
   );

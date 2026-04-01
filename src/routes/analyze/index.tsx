@@ -15,17 +15,17 @@ function AnalyzePage() {
   return (
     <div className="py-8 space-y-8">
       <div>
-        <h2 className="text-2xl font-bold">New Analysis</h2>
-        <p className="text-zinc-400 text-sm mt-1">Choose your filming angle and input method</p>
+        <h2 className="text-2xl font-bold">새 분석</h2>
+        <p className="text-zinc-400 text-sm mt-1">촬영 각도와 입력 방식을 선택하세요</p>
       </div>
 
       <div className="space-y-3">
-        <label className="text-sm font-medium text-zinc-300">Filming Angle</label>
+        <label className="text-sm font-medium text-zinc-300">촬영 각도</label>
         <AngleSelector value={angle} onChange={setAngle} />
       </div>
 
       <div className="space-y-3">
-        <label className="text-sm font-medium text-zinc-300">Input Method</label>
+        <label className="text-sm font-medium text-zinc-300">입력 방식</label>
         <div className="grid grid-cols-2 gap-3">
           <Link
             to="/analyze/camera"
@@ -33,8 +33,8 @@ function AnalyzePage() {
             className="bg-zinc-800 hover:bg-zinc-700 rounded-xl p-4 text-center transition-colors"
           >
             <div className="text-2xl mb-1">📷</div>
-            <div className="font-semibold text-sm">Real-time Camera</div>
-            <div className="text-xs text-zinc-500 mt-0.5">Measure live</div>
+            <div className="font-semibold text-sm">실시간 카메라</div>
+            <div className="text-xs text-zinc-500 mt-0.5">실시간 측정</div>
           </Link>
           <Link
             to="/analyze/upload"
@@ -42,8 +42,8 @@ function AnalyzePage() {
             className="bg-zinc-800 hover:bg-zinc-700 rounded-xl p-4 text-center transition-colors"
           >
             <div className="text-2xl mb-1">📁</div>
-            <div className="font-semibold text-sm">Upload Video</div>
-            <div className="text-xs text-zinc-500 mt-0.5">Analyze recorded</div>
+            <div className="font-semibold text-sm">영상 업로드</div>
+            <div className="text-xs text-zinc-500 mt-0.5">녹화 영상 분석</div>
           </Link>
         </div>
       </div>

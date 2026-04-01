@@ -22,22 +22,22 @@ function ResultPage() {
   }, [id]);
 
   if (!session) {
-    return <div className="py-8 text-center text-zinc-500">Loading...</div>;
+    return <div className="py-8 text-center text-zinc-500">로딩 중...</div>;
   }
 
   return (
     <div className="py-4 space-y-4">
       <div>
-        <h2 className="text-xl font-bold">Analysis Report</h2>
+        <h2 className="text-xl font-bold">분석 리포트</h2>
         <p className="text-xs text-zinc-500">
-          {new Date(session.date).toLocaleDateString()} · {session.angle} view · {session.totalReps} total reps
+          {new Date(session.date).toLocaleDateString()} · {session.angle} 뷰 · {session.totalReps} 총 회
         </p>
       </div>
 
       <div ref={reportRef} className="space-y-4">
         <div className="grid grid-cols-2 gap-3">
-          <ScoreCard label="Overall Score" score={session.overallScore} />
-          <ScoreCard label="Balance Score" score={session.balanceScore} color="#10b981" />
+          <ScoreCard label="종합 점수" score={session.overallScore} />
+          <ScoreCard label="밸런스 점수" score={session.balanceScore} color="#10b981" />
         </div>
         <SetChart sets={session.sets} />
         {(session.angle === 'front' || session.angle === 'back') && <BodyDiagram sets={session.sets} />}

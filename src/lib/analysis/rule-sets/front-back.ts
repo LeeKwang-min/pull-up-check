@@ -19,12 +19,12 @@ export function analyzeFrontBack(landmarks: LandmarkSnapshot): FormIssue[] {
     landmarks.shoulderRight.y,
   );
   if (Math.abs(shoulderAsym) > SHOULDER_THRESHOLD) {
-    const side = shoulderAsym > 0 ? 'left' : 'right';
+    const sideKo = shoulderAsym > 0 ? '왼쪽' : '오른쪽';
     issues.push({
       type: 'asymmetry',
       severity: classifySeverity(shoulderAsym, 5, 15),
-      detail: `${side} shoulder is ${Math.abs(shoulderAsym).toFixed(1)}% lower`,
-      values: { shoulderAsymmetry: shoulderAsym },
+      detail: `${sideKo} 어깨가 ${Math.abs(shoulderAsym).toFixed(1)}% 낮습니다`,
+      values: { shoulderAsymmetry: shoulderAsym, leftSide: shoulderAsym > 0 ? 1 : 0 },
     });
   }
 
@@ -33,11 +33,11 @@ export function analyzeFrontBack(landmarks: LandmarkSnapshot): FormIssue[] {
     landmarks.elbowRight.y,
   );
   if (Math.abs(elbowAsym) > ELBOW_THRESHOLD) {
-    const side = elbowAsym > 0 ? 'left' : 'right';
+    const elbowSideKo = elbowAsym > 0 ? '왼쪽' : '오른쪽';
     issues.push({
       type: 'asymmetry',
       severity: classifySeverity(elbowAsym, 8, 20),
-      detail: `${side} elbow is ${Math.abs(elbowAsym).toFixed(1)}% lower`,
+      detail: `${elbowSideKo} 팔꿈치가 ${Math.abs(elbowAsym).toFixed(1)}% 낮습니다`,
       values: { elbowAsymmetry: elbowAsym },
     });
   }

@@ -37,9 +37,9 @@ export function BodyDiagram({ sets }: BodyDiagramProps) {
 
     const shoulderAsym =
       asymmetryIssues
-        .filter((i) => i.detail.includes('shoulder'))
+        .filter((i) => i.detail.includes('어깨'))
         .reduce((sum, i) => sum + Math.abs(i.values.shoulderAsymmetry ?? 0), 0) /
-        Math.max(1, asymmetryIssues.filter((i) => i.detail.includes('shoulder')).length);
+        Math.max(1, asymmetryIssues.filter((i) => i.detail.includes('어깨')).length);
 
     const colorScale = d3.scaleLinear<string>().domain([0, 5, 15]).range(['#22c55e', '#eab308', '#ef4444']).clamp(true);
 
@@ -52,7 +52,7 @@ export function BodyDiagram({ sets }: BodyDiagramProps) {
     });
 
     const legend = svg.append('g').attr('transform', 'translate(10, 165)');
-    [{ color: '#22c55e', label: 'Good' }, { color: '#eab308', label: 'Caution' }, { color: '#ef4444', label: 'Imbalanced' }].forEach((d, i) => {
+    [{ color: '#22c55e', label: '양호' }, { color: '#eab308', label: '주의' }, { color: '#ef4444', label: '불균형' }].forEach((d, i) => {
       legend.append('rect').attr('x', i * 65).attr('y', 0).attr('width', 10).attr('height', 10).attr('rx', 2).attr('fill', d.color);
       legend.append('text').attr('x', i * 65 + 14).attr('y', 9).attr('fill', '#a1a1aa').attr('font-size', '10px').text(d.label);
     });
@@ -60,7 +60,7 @@ export function BodyDiagram({ sets }: BodyDiagramProps) {
 
   return (
     <div className="bg-zinc-900 rounded-xl p-4">
-      <h3 className="text-sm font-semibold text-zinc-300 mb-2">Body Balance</h3>
+      <h3 className="text-sm font-semibold text-zinc-300 mb-2">신체 밸런스</h3>
       <svg ref={svgRef} viewBox="0 0 200 185" className="w-full max-w-[200px] mx-auto" />
     </div>
   );
