@@ -1,4 +1,4 @@
-import type { CameraAngle, LandmarkSnapshot, FormIssue } from '../../types/analysis';
+import type { CameraAngle, LandmarkSnapshot, FormIssue, AsymmetryDetails } from '../../types/analysis';
 import { analyzeFrontBack } from './rule-sets/front-back';
 import { analyzeSide, resetSideState } from './rule-sets/side';
 import { computeFormScore } from './rule-sets/shared';
@@ -6,9 +6,19 @@ import { calculateAsymmetry } from './angle-calculator';
 
 export class FormAnalyzer {
   private angle: CameraAngle;
+  // 높이 비대칭 (절대값)
   private shoulderAsymSamples: number[] = [];
   private elbowAsymSamples: number[] = [];
   private hipAsymSamples: number[] = [];
+  // 높이 비대칭 (부호 포함: 양수 = 오른쪽 낮음)
+  private shoulderBiasSamples: number[] = [];
+  private elbowBiasSamples: number[] = [];
+  private hipBiasSamples: number[] = [];
+  // 다리 벌어짐 (어깨 너비 대비 %)
+  private kneeGapSamples: number[] = [];
+  // 팔꿈치 너비 비대칭 (절대값 + 부호)
+  private elbowWidthSamples: number[] = [];
+  private elbowWidthBiasSamples: number[] = [];
 
   constructor(angle: CameraAngle) {
     this.angle = angle;
@@ -16,16 +26,34 @@ export class FormAnalyzer {
   }
 
   analyze(landmarks: LandmarkSnapshot): FormIssue[] {
-    // 매 프레임마다 비대칭 데이터 수집 (임계값 무관)
-    this.shoulderAsymSamples.push(
-      Math.abs(calculateAsymmetry(landmarks.shoulderLeft.y, landmarks.shoulderRight.y)),
-    );
-    this.elbowAsymSamples.push(
-      Math.abs(calculateAsymmetry(landmarks.elbowLeft.y, landmarks.elbowRight.y)),
-    );
-    this.hipAsymSamples.push(
-      Math.abs(calculateAsymmetry(landmarks.hipLeft.y, landmarks.hipRight.y)),
-    );
+    // 높이 비대칭
+    const shoulderAsym = calculateAsymmetry(landmarks.shoulderLeft.y, landmarks.shoulderRight.y);
+    const elbowAsym = calculateAsymmetry(landmarks.elbowLeft.y, landmarks.elbowRight.y);
+    const hipAsym = calculateAsymmetry(landmarks.hipLeft.y, landmarks.hipRight.y);
+
+    this.shoulderAsymSamples.push(Math.abs(shoulderAsym));
+    this.elbowAsymSamples.push(Math.abs(elbowAsym));
+    this.hipAsymSamples.push(Math.abs(hipAsym));
+    this.shoulderBiasSamples.push(shoulderAsym);
+    this.elbowBiasSamples.push(elbowAsym);
+    this.hipBiasSamples.push(hipAsym);
+
+    // 다리 벌어짐 (어깨 너비 대비 %)
+    const shoulderWidth = Math.abs(landmarks.shoulderLeft.x - landmarks.shoulderRight.x);
+    const kneeGapX = Math.abs(landmarks.kneeLeft.x - landmarks.kneeRight.x);
+    const kneeGapRatio = shoulderWidth > 0.01 ? (kneeGapX / shoulderWidth) * 100 : 0;
+    this.kneeGapSamples.push(kneeGapRatio);
+
+    // 팔꿈치 너비 대칭 (등 중심 기준 좌우 간격 차이)
+    const centerX = (landmarks.shoulderLeft.x + landmarks.shoulderRight.x) / 2;
+    const leftSpread = Math.abs(centerX - landmarks.elbowLeft.x);
+    const rightSpread = Math.abs(landmarks.elbowRight.x - centerX);
+    const avgSpread = (leftSpread + rightSpread) / 2;
+    const elbowWidthAsym = avgSpread > 0.005
+      ? ((rightSpread - leftSpread) / avgSpread) * 100
+      : 0;
+    this.elbowWidthSamples.push(Math.abs(elbowWidthAsym));
+    this.elbowWidthBiasSamples.push(elbowWidthAsym);
 
     switch (this.angle) {
       case 'front':
@@ -42,7 +70,7 @@ export class FormAnalyzer {
 
   /**
    * 전체 세션의 밸런스 점수 계산 (0~100)
-   * 모든 프레임의 좌우 비대칭 평균으로 산출
+   * 5개 항목 가중 평균으로 산출
    */
   computeBalanceScore(): number {
     if (this.shoulderAsymSamples.length === 0) return 100;
@@ -50,22 +78,36 @@ export class FormAnalyzer {
     const avgShoulder = average(this.shoulderAsymSamples);
     const avgElbow = average(this.elbowAsymSamples);
     const avgHip = average(this.hipAsymSamples);
+    const avgElbowWidth = average(this.elbowWidthSamples);
+    // 다리 간격은 스케일이 다르므로 /10으로 정규화 (30% → 3점)
+    const avgKneeGap = average(this.kneeGapSamples) / 10;
 
-    // 어깨 비중 50%, 팔꿈치 30%, 엉덩이 20%
-    const weightedAsym = avgShoulder * 0.5 + avgElbow * 0.3 + avgHip * 0.2;
+    // 어깨 20%, 팔꿈치 높이 15%, 골반 10%, 팔꿈치 너비 25%, 다리 밀착 30%
+    const weightedAsym =
+      avgShoulder * 0.20 +
+      avgElbow * 0.15 +
+      avgHip * 0.10 +
+      avgElbowWidth * 0.25 +
+      avgKneeGap * 0.30;
 
-    // 비대칭 0% → 100점, 10%+ → 0점 (더 민감하게)
+    // 비대칭 0% → 100점, 10%+ → 0점
     return Math.max(0, Math.round(100 - weightedAsym * 10));
   }
 
   /**
    * 부위별 비대칭 상세 데이터 반환 (리포트용)
    */
-  getAsymmetryDetails(): { shoulder: number; elbow: number; hip: number } {
+  getAsymmetryDetails(): AsymmetryDetails {
     return {
       shoulder: average(this.shoulderAsymSamples),
       elbow: average(this.elbowAsymSamples),
       hip: average(this.hipAsymSamples),
+      shoulderBias: average(this.shoulderBiasSamples),
+      elbowBias: average(this.elbowBiasSamples),
+      hipBias: average(this.hipBiasSamples),
+      kneeGap: average(this.kneeGapSamples),
+      elbowWidth: average(this.elbowWidthSamples),
+      elbowWidthBias: average(this.elbowWidthBiasSamples),
     };
   }
 }

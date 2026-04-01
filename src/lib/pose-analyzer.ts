@@ -145,7 +145,7 @@ export class PoseAnalyzer {
     return this.formAnalyzer.computeBalanceScore();
   }
 
-  getAsymmetryDetails(): { shoulder: number; elbow: number; hip: number } {
+  getAsymmetryDetails(): import('../types/analysis').AsymmetryDetails {
     return this.formAnalyzer.getAsymmetryDetails();
   }
 

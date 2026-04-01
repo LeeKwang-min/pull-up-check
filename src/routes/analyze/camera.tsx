@@ -124,8 +124,9 @@ function CameraAnalysisPage() {
     }
     cancelAnimationFrame(animationRef.current);
 
-    // 밸런스 점수 계산 (destroy 전에)
+    // 밸런스 점수 & 비대칭 상세 계산 (destroy 전에)
     const balanceScore = analyzerRef.current?.getBalanceScore() ?? 0;
+    const asymmetryDetails = analyzerRef.current?.getAsymmetryDetails();
     analyzerRef.current?.destroy();
     analyzerRef.current = null;
     stopAnalysis();
@@ -145,6 +146,7 @@ function CameraAnalysisPage() {
           ? allSets.reduce((s, set) => s + set.averageFormScore, 0) / allSets.length
           : 0,
       balanceScore,
+      asymmetryDetails,
       totalReps: allSets.reduce((s, set) => s + set.reps.length, 0),
       duration: 0,
     });

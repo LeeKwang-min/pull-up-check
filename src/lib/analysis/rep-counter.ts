@@ -4,7 +4,7 @@ const EXTENDED_THRESHOLD = 150;
 const FLEXED_THRESHOLD = 90;
 const HYSTERESIS = 10;
 const MIN_REP_DURATION_MS = 800;
-const MAX_REP_DURATION_MS = 3500;  // 3.5초 초과 → 마운트/디스마운트
+const MAX_REP_DURATION_MS = 5000;  // 5초 초과 → 비정상 렙
 const SMOOTHING_WINDOW = 7;
 const MAX_LR_DIFF = 50;
 const MIN_PHASE_FRAMES = 3;
@@ -23,6 +23,7 @@ export class RepCounter {
   private phaseFrameCount = 0;
   private pendingPhase: RepPhase | null = null;
   private lastRawAngle = -1;
+  private skipNextRep = false;
 
   /**
    * @param leftAngle 왼쪽 팔꿈치 각도
@@ -112,21 +113,30 @@ export class RepCounter {
   private applyPhaseTransition(nextPhase: RepPhase, angle: number, timestamp: number): boolean {
     let repCompleted = false;
 
+    // 마운트 감지: idle→extended 직후 첫 사이클은 마운트 동작으로 스킵
+    if (nextPhase === 'extended' && this.phase === 'idle') {
+      this.skipNextRep = true;
+    }
+
     // extended로 진입하면서 extending에서 온 경우 = 렙 완료 후보
     if (nextPhase === 'extended' && this.phase === 'extending') {
-      const elapsed = timestamp - this.repStartTime;
-      const sinceLastRep = timestamp - this.lastRepCompletedTime;
+      if (this.skipNextRep) {
+        this.skipNextRep = false;
+      } else {
+        const elapsed = timestamp - this.repStartTime;
+        const sinceLastRep = timestamp - this.lastRepCompletedTime;
 
-      if (
-        elapsed >= MIN_REP_DURATION_MS &&
-        elapsed <= MAX_REP_DURATION_MS &&
-        sinceLastRep >= MIN_REP_DURATION_MS
-      ) {
-        this.count++;
-        this.lastTempo = elapsed;
-        this.lastRom = this.minAngle;
-        this.lastRepCompletedTime = timestamp;
-        repCompleted = true;
+        if (
+          elapsed >= MIN_REP_DURATION_MS &&
+          elapsed <= MAX_REP_DURATION_MS &&
+          sinceLastRep >= MIN_REP_DURATION_MS
+        ) {
+          this.count++;
+          this.lastTempo = elapsed;
+          this.lastRom = this.minAngle;
+          this.lastRepCompletedTime = timestamp;
+          repCompleted = true;
+        }
       }
     }
 
@@ -134,9 +144,9 @@ export class RepCounter {
     this.phase = nextPhase;
 
     if (nextPhase === 'extended') {
-      this.repStartTime = timestamp;
       this.minAngle = 180;
     } else if (nextPhase === 'flexing') {
+      this.repStartTime = timestamp;
       this.minAngle = angle;
     }
 
@@ -155,5 +165,6 @@ export class RepCounter {
     this.phaseFrameCount = 0;
     this.pendingPhase = null;
     this.lastRawAngle = -1;
+    this.skipNextRep = false;
   }
 }

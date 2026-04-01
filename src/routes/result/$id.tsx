@@ -42,7 +42,9 @@ function ResultPage() {
           <ScoreCard label="밸런스 점수" score={session.balanceScore} color="#10b981" />
         </div>
         <SetChart sets={session.sets} />
-        {(session.angle === 'front' || session.angle === 'back') && <BodyDiagram sets={session.sets} />}
+        {(session.angle === 'front' || session.angle === 'back') && (
+          <BodyDiagram sets={session.sets} asymmetryDetails={session.asymmetryDetails} />
+        )}
         <FeedbackList sets={session.sets} />
       </div>
 

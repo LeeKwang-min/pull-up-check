@@ -21,7 +21,7 @@ export interface LandmarkSnapshot {
 
 export type CameraAngle = 'front' | 'back' | 'side';
 export type InputMode = 'camera' | 'upload';
-export type FormIssueType = 'asymmetry' | 'kipping' | 'incomplete_rom' | 'body_swing';
+export type FormIssueType = 'asymmetry' | 'kipping' | 'incomplete_rom' | 'body_swing' | 'leg_spread' | 'elbow_width';
 export type Severity = 'low' | 'medium' | 'high';
 
 export interface FormIssue {
@@ -47,6 +47,22 @@ export interface SetData {
   formBreakdownRep: number | null;
 }
 
+export interface AsymmetryDetails {
+  shoulder: number;
+  elbow: number;
+  hip: number;
+  /** 양수 = 오른쪽이 더 낮음, 음수 = 왼쪽이 더 낮음 */
+  shoulderBias: number;
+  elbowBias: number;
+  hipBias: number;
+  /** 무릎 간격 (어깨 너비 대비 %) */
+  kneeGap: number;
+  /** 팔꿈치 너비 비대칭 (절대값 %) */
+  elbowWidth: number;
+  /** 양수 = 오른쪽이 더 벌어짐 */
+  elbowWidthBias: number;
+}
+
 export interface Session {
   id: string;
   date: Date;
@@ -55,6 +71,7 @@ export interface Session {
   sets: SetData[];
   overallScore: number;
   balanceScore: number;
+  asymmetryDetails?: AsymmetryDetails;
   totalReps: number;
   duration: number;
 }
