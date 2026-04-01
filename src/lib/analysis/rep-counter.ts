@@ -4,9 +4,11 @@ const EXTENDED_THRESHOLD = 150;
 const FLEXED_THRESHOLD = 90;
 const HYSTERESIS = 10;
 const MIN_REP_DURATION_MS = 800;
+const MAX_REP_DURATION_MS = 3500;  // 3.5초 초과 → 마운트/디스마운트
 const SMOOTHING_WINDOW = 7;
-const MAX_LR_DIFF = 50;          // 좌우 차이 50° 초과 시 프레임 무시
-const MIN_PHASE_FRAMES = 3;      // 상태 전환에 최소 3프레임 연속 필요
+const MAX_LR_DIFF = 50;
+const MIN_PHASE_FRAMES = 3;
+const MAX_ANGLE_JUMP = 80;         // 프레임 간 각도 변화 80°+ → 무시
 
 export class RepCounter {
   count = 0;
@@ -20,6 +22,7 @@ export class RepCounter {
   private angleBuffer: number[] = [];
   private phaseFrameCount = 0;
   private pendingPhase: RepPhase | null = null;
+  private lastRawAngle = -1;
 
   /**
    * @param leftAngle 왼쪽 팔꿈치 각도
@@ -34,6 +37,13 @@ export class RepCounter {
     }
 
     const raw = (leftAngle + rightAngle) / 2;
+
+    // 프레임 간 각도 급변 무시 (바에서 내려오기 등)
+    if (this.lastRawAngle >= 0 && Math.abs(raw - this.lastRawAngle) > MAX_ANGLE_JUMP) {
+      this.lastRawAngle = raw;
+      return false;
+    }
+    this.lastRawAngle = raw;
 
     // 이동 평균 스무딩
     this.angleBuffer.push(raw);
@@ -107,7 +117,11 @@ export class RepCounter {
       const elapsed = timestamp - this.repStartTime;
       const sinceLastRep = timestamp - this.lastRepCompletedTime;
 
-      if (elapsed >= MIN_REP_DURATION_MS && sinceLastRep >= MIN_REP_DURATION_MS) {
+      if (
+        elapsed >= MIN_REP_DURATION_MS &&
+        elapsed <= MAX_REP_DURATION_MS &&
+        sinceLastRep >= MIN_REP_DURATION_MS
+      ) {
         this.count++;
         this.lastTempo = elapsed;
         this.lastRom = this.minAngle;
@@ -140,5 +154,6 @@ export class RepCounter {
     this.angleBuffer = [];
     this.phaseFrameCount = 0;
     this.pendingPhase = null;
+    this.lastRawAngle = -1;
   }
 }
