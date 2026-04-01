@@ -49,6 +49,17 @@ function UploadAnalysisPage() {
   const { landmarks, progress, updateLandmarks, updateProgress, addRep, addAlert, nextSet, reset } =
     useAnalysisStore();
   const analyzerRef = useRef<PoseAnalyzer | null>(null);
+  const abortRef = useRef(false);
+
+  // 컴포넌트 언마운트 시 분석 중단 및 리소스 정리
+  useEffect(() => {
+    abortRef.current = false;
+    return () => {
+      abortRef.current = true;
+      analyzerRef.current?.destroy();
+      analyzerRef.current = null;
+    };
+  }, []);
 
   const handleFileSelected = useCallback((file: File) => {
     const url = URL.createObjectURL(file);
@@ -63,6 +74,7 @@ function UploadAnalysisPage() {
     const video = videoRef.current;
     if (!video) return;
 
+    abortRef.current = false;
     setLoading(true);
     setError(null);
     frameLandmarksRef.current = [];
@@ -95,10 +107,14 @@ function UploadAnalysisPage() {
     let currentTime = 0;
 
     while (currentTime < duration) {
+      if (abortRef.current) break;
+
       video.currentTime = currentTime;
       await new Promise<void>((resolve) => {
         video.onseeked = () => resolve();
       });
+
+      if (abortRef.current) break;
 
       analyzer.processFrame(video, currentTime * 1000);
       updateProgress((currentTime / duration) * 100);
@@ -107,6 +123,14 @@ function UploadAnalysisPage() {
       await new Promise((r) => setTimeout(r, 0));
 
       currentTime += frameStep;
+    }
+
+    // 중단된 경우 리소스 정리 후 early return
+    if (abortRef.current) {
+      analyzer.destroy();
+      analyzerRef.current = null;
+      setAnalyzing(false);
+      return;
     }
 
     updateProgress(100);
@@ -227,12 +251,12 @@ function UploadAnalysisPage() {
   const displayLandmarks = analysisComplete ? playbackLandmarks : landmarks;
 
   return (
-    <div className="py-4 space-y-4">
+    <div className="pt-8 pb-4 space-y-4">
       {!videoUrl ? (
         <VideoDropzone onFileSelected={handleFileSelected} />
       ) : (
         <>
-          <div className="relative bg-black rounded-2xl overflow-hidden">
+          <div className="relative bg-black rounded-2xl overflow-hidden shadow-lg shadow-black/40">
             <video
               ref={videoRef}
               src={videoUrl}
@@ -254,26 +278,26 @@ function UploadAnalysisPage() {
           </div>
 
           {error && (
-            <div className="bg-red-900/20 border border-red-500/20 rounded-xl p-3 text-sm text-red-400">
+            <div className="bg-red-500/8 border border-red-500/15 rounded-xl px-4 py-3 text-[13px] text-red-400">
               {error}
             </div>
           )}
 
           {analysisComplete ? (
-            <div className="space-y-4">
-              <p className="text-center text-sm text-stone-400">
+            <div className="space-y-5">
+              <p className="text-center text-[13px] text-stone-500">
                 영상을 재생하여 스켈레톤 분석을 확인하세요
               </p>
-              <div className="flex items-center justify-center gap-2">
-                <span className="text-xs text-stone-500">배속</span>
+              <div className="flex items-center justify-center gap-1.5">
+                <span className="text-[11px] text-stone-600 mr-1">배속</span>
                 {[0.25, 0.5, 1, 1.5, 2].map((rate) => (
                   <button
                     key={rate}
                     onClick={() => handlePlaybackRate(rate)}
-                    className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors cursor-pointer ${
+                    className={`px-3 py-1.5 rounded-lg text-xs font-medium cursor-pointer active:scale-95 transition-all ${
                       playbackRate === rate
-                        ? 'bg-amber-500 text-black'
-                        : 'bg-stone-700 text-stone-300 hover:bg-stone-600'
+                        ? 'bg-amber-500 text-stone-950'
+                        : 'bg-stone-800/60 text-stone-400 hover:bg-stone-800'
                     }`}
                   >
                     {rate}x
@@ -284,34 +308,41 @@ function UploadAnalysisPage() {
               {session && (
                 <>
                   <div className="space-y-4">
-                    <h3 className="text-lg font-bold uppercase tracking-wider font-[Barlow_Condensed]">분석 리포트</h3>
+                    <h3 className="text-2xl font-bold uppercase tracking-wider font-[Barlow_Condensed]">분석 리포트</h3>
                     <div className="grid grid-cols-2 gap-3">
                       <ScoreCard label="종합 점수" score={session.overallScore} />
-                      <ScoreCard label="밸런스 점수" score={session.balanceScore} color="#10b981" />
+                      <ScoreCard label={session.angle === 'side' ? '폼 안정성' : '밸런스 점수'} score={session.balanceScore} color="#10b981" />
                     </div>
                     <div ref={reportRef} className="space-y-4">
                       <SetChart sets={session.sets} />
                       {(session.angle === 'front' || session.angle === 'back') && (
-                        <BodyDiagram sets={session.sets} asymmetryDetails={session.asymmetryDetails} />
+                        <BodyDiagram asymmetryDetails={session.asymmetryDetails} />
                       )}
                     </div>
-                    <FeedbackList sets={session.sets} />
+                    <FeedbackList
+                      sets={session.sets}
+                      overallScore={session.overallScore}
+                      balanceScore={session.balanceScore}
+                      asymmetryDetails={session.asymmetryDetails}
+                      totalReps={session.totalReps}
+                      angle={session.angle}
+                    />
                   </div>
                   <ReportExport targetRef={reportRef} />
                 </>
               )}
             </div>
           ) : loading ? (
-            <div className="text-center py-4">
-              <div className="text-sm text-stone-400">MediaPipe 모델 로딩 중...</div>
-              <div className="text-xs text-stone-500 mt-1">첫 실행 시 모델 다운로드가 필요합니다</div>
+            <div className="text-center py-6">
+              <div className="text-sm text-stone-300 font-medium">MediaPipe 모델 로딩 중...</div>
+              <div className="text-[11px] text-stone-500 mt-1.5">첫 실행 시 모델 다운로드가 필요합니다</div>
             </div>
           ) : analyzing ? (
             <ProgressBar percent={progress} label="영상 분석 중..." />
           ) : (
             <button
               onClick={handleAnalyze}
-              className="w-full bg-gradient-to-r from-amber-500 to-amber-600 text-black font-bold py-4 rounded-2xl transition-all hover:shadow-lg hover:shadow-amber-500/20 uppercase tracking-widest text-sm font-[Barlow_Condensed] cursor-pointer"
+              className="w-full bg-gradient-to-r from-amber-500 to-amber-600 text-stone-950 font-bold py-4 rounded-2xl uppercase tracking-widest text-sm font-[Barlow_Condensed] cursor-pointer shadow-lg shadow-amber-500/15 active:scale-[0.98] transition-transform"
             >
               분석 시작
             </button>

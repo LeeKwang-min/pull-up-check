@@ -29,6 +29,7 @@ export class PoseAnalyzer {
   private formAnalyzer: FormAnalyzer;
   private callbacks: PoseAnalyzerCallbacks;
   private lastTimestamp = -1;
+  private activated = false;
 
   constructor(angle: CameraAngle, callbacks: PoseAnalyzerCallbacks) {
     this.repCounter = new RepCounter();
@@ -37,43 +38,30 @@ export class PoseAnalyzer {
   }
 
   async init(): Promise<void> {
+    const vision = await FilesetResolver.forVisionTasks(
+      'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@latest/wasm',
+    );
+
+    const opts = {
+      runningMode: 'VIDEO' as const,
+      numPoses: 1,
+      minPoseDetectionConfidence: 0.5,
+      minPosePresenceConfidence: 0.5,
+      minTrackingConfidence: 0.5,
+    };
+
     try {
-      const vision = await FilesetResolver.forVisionTasks(
-        'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@latest/wasm',
-      );
-
       this.poseLandmarker = await PoseLandmarker.createFromOptions(vision, {
-        baseOptions: {
-          modelAssetPath: MODEL_URL,
-          delegate: 'GPU',
-        },
-        runningMode: 'VIDEO',
-        numPoses: 1,
-        minPoseDetectionConfidence: 0.5,
-        minPosePresenceConfidence: 0.5,
-        minTrackingConfidence: 0.5,
+        baseOptions: { modelAssetPath: MODEL_URL, delegate: 'GPU' },
+        ...opts,
       });
-
       this.callbacks.onReady?.();
-    } catch (error) {
-      // GPU 실패 시 CPU로 재시도
+    } catch {
       try {
-        const vision = await FilesetResolver.forVisionTasks(
-          'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@latest/wasm',
-        );
-
         this.poseLandmarker = await PoseLandmarker.createFromOptions(vision, {
-          baseOptions: {
-            modelAssetPath: MODEL_URL,
-            delegate: 'CPU',
-          },
-          runningMode: 'VIDEO',
-          numPoses: 1,
-          minPoseDetectionConfidence: 0.5,
-          minPosePresenceConfidence: 0.5,
-          minTrackingConfidence: 0.5,
+          baseOptions: { modelAssetPath: MODEL_URL, delegate: 'CPU' },
+          ...opts,
         });
-
         this.callbacks.onReady?.();
       } catch (cpuError) {
         this.callbacks.onError?.(`MediaPipe 초기화 실패: ${cpuError}`);
@@ -109,7 +97,12 @@ export class PoseAnalyzer {
 
     const prevPhase = this.repCounter.phase;
     const repCompleted = this.repCounter.update(leftAngle, rightAngle, ts);
-    const issues = this.formAnalyzer.analyze(landmarks);
+
+    // 매달린 자세(extended) 감지 후부터 폼 분석 시작
+    if (!this.activated && this.repCounter.phase !== 'idle') {
+      this.activated = true;
+    }
+    const issues = this.activated ? this.formAnalyzer.analyze(landmarks) : [];
 
     // 디버그 로깅
     if (repCompleted || prevPhase !== this.repCounter.phase) {

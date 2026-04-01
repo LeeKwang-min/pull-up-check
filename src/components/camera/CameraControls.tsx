@@ -7,27 +7,31 @@ interface CameraControlsProps {
 
 export function CameraControls({ isAnalyzing, onStartStop, onNextSet, onFinish }: CameraControlsProps) {
   return (
-    <div className="flex items-center justify-center gap-5">
+    <div className="flex items-center justify-center gap-6">
       <button
         onClick={onNextSet}
         disabled={!isAnalyzing}
-        className="bg-stone-800 hover:bg-stone-700 disabled:opacity-30 text-stone-300 font-semibold py-2.5 px-5 rounded-xl text-sm transition-colors border border-stone-700 uppercase tracking-wider font-[Barlow_Condensed] cursor-pointer"
+        className="bg-stone-900 hover:bg-stone-800 disabled:opacity-25 text-stone-300 font-semibold py-2.5 px-5 rounded-xl text-sm transition-all border border-stone-800 uppercase tracking-wider font-[Barlow_Condensed] cursor-pointer active:scale-95"
       >
         다음 세트
       </button>
       <button
         onClick={onStartStop}
-        className={`w-16 h-16 rounded-full font-bold text-sm transition-all cursor-pointer uppercase tracking-wider font-[Barlow_Condensed] ${
+        className={`relative w-16 h-16 rounded-full font-bold text-sm cursor-pointer uppercase tracking-wider font-[Barlow_Condensed] active:scale-90 transition-all ${
           isAnalyzing
-            ? 'bg-red-600 hover:bg-red-500 text-white ring-4 ring-red-600/20'
-            : 'bg-gradient-to-br from-amber-500 to-amber-600 text-black ring-4 ring-amber-500/20 shadow-lg shadow-amber-500/20'
+            ? 'bg-red-600 text-white shadow-lg shadow-red-600/25'
+            : 'bg-gradient-to-br from-amber-400 to-amber-600 text-stone-950 shadow-lg shadow-amber-500/25'
         }`}
       >
-        {isAnalyzing ? '정지' : '시작'}
+        {/* Pulse ring when analyzing */}
+        {isAnalyzing && (
+          <span className="absolute inset-0 rounded-full border-2 border-red-500/40 animate-ping" />
+        )}
+        <span className="relative">{isAnalyzing ? '정지' : '시작'}</span>
       </button>
       <button
         onClick={onFinish}
-        className="bg-stone-800 hover:bg-stone-700 text-stone-300 font-semibold py-2.5 px-5 rounded-xl text-sm transition-colors border border-stone-700 uppercase tracking-wider font-[Barlow_Condensed] cursor-pointer"
+        className="bg-stone-900 hover:bg-stone-800 text-stone-300 font-semibold py-2.5 px-5 rounded-xl text-sm transition-all border border-stone-800 uppercase tracking-wider font-[Barlow_Condensed] cursor-pointer active:scale-95"
       >
         완료
       </button>

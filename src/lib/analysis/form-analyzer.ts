@@ -4,21 +4,34 @@ import { analyzeSide, resetSideState } from './rule-sets/side';
 import { computeFormScore } from './rule-sets/shared';
 import { calculateAsymmetry } from './angle-calculator';
 
+/** O(1) memory running average accumulator */
+class RunningAvg {
+  private sum = 0;
+  private count = 0;
+  push(v: number) { this.sum += v; this.count++; }
+  get avg() { return this.count > 0 ? this.sum / this.count : 0; }
+  get empty() { return this.count === 0; }
+}
+
 export class FormAnalyzer {
   private angle: CameraAngle;
-  // 높이 비대칭 (절대값)
-  private shoulderAsymSamples: number[] = [];
-  private elbowAsymSamples: number[] = [];
-  private hipAsymSamples: number[] = [];
-  // 높이 비대칭 (부호 포함: 양수 = 오른쪽 낮음)
-  private shoulderBiasSamples: number[] = [];
-  private elbowBiasSamples: number[] = [];
-  private hipBiasSamples: number[] = [];
-  // 다리 벌어짐 (골반 너비 대비 %)
-  private kneeGapSamples: number[] = [];
-  // 팔꿈치 너비 비대칭 (절대값 + 부호)
-  private elbowWidthSamples: number[] = [];
-  private elbowWidthBiasSamples: number[] = [];
+
+  // ── 정면/후면: 좌우 비대칭 (running averages) ──
+  private shoulderAsym = new RunningAvg();
+  private elbowAsym = new RunningAvg();
+  private hipAsym = new RunningAvg();
+  private shoulderBias = new RunningAvg();
+  private elbowBias = new RunningAvg();
+  private hipBias = new RunningAvg();
+  private kneeGap = new RunningAvg();
+  private elbowWidth = new RunningAvg();
+  private elbowWidthBias = new RunningAvg();
+
+  // ── 측면: 안정성 지표 ──
+  private sideFrameCount = 0;
+  private swingFrames = 0;
+  private swingMagnitudeSum = 0;
+  private kippingFrames = 0;
 
   constructor(angle: CameraAngle) {
     this.angle = angle;
@@ -26,93 +39,119 @@ export class FormAnalyzer {
   }
 
   analyze(landmarks: LandmarkSnapshot): FormIssue[] {
-    // 높이 비대칭
-    const shoulderAsym = calculateAsymmetry(landmarks.shoulderLeft.y, landmarks.shoulderRight.y);
-    const elbowAsym = calculateAsymmetry(landmarks.elbowLeft.y, landmarks.elbowRight.y);
-    const hipAsym = calculateAsymmetry(landmarks.hipLeft.y, landmarks.hipRight.y);
+    if (this.angle === 'front' || this.angle === 'back') {
+      return this.analyzeFrontBackFrame(landmarks);
+    }
+    return this.analyzeSideFrame(landmarks);
+  }
 
-    this.shoulderAsymSamples.push(Math.abs(shoulderAsym));
-    this.elbowAsymSamples.push(Math.abs(elbowAsym));
-    this.hipAsymSamples.push(Math.abs(hipAsym));
-    this.shoulderBiasSamples.push(shoulderAsym);
-    this.elbowBiasSamples.push(elbowAsym);
-    this.hipBiasSamples.push(hipAsym);
+  private analyzeFrontBackFrame(landmarks: LandmarkSnapshot): FormIssue[] {
+    const shoulderA = calculateAsymmetry(landmarks.shoulderLeft.y, landmarks.shoulderRight.y);
+    const elbowA = calculateAsymmetry(landmarks.elbowLeft.y, landmarks.elbowRight.y);
+    const hipA = calculateAsymmetry(landmarks.hipLeft.y, landmarks.hipRight.y);
 
-    // 다리 벌어짐 (골반 너비 대비 %)
+    this.shoulderAsym.push(Math.abs(shoulderA));
+    this.elbowAsym.push(Math.abs(elbowA));
+    this.hipAsym.push(Math.abs(hipA));
+    this.shoulderBias.push(shoulderA);
+    this.elbowBias.push(elbowA);
+    this.hipBias.push(hipA);
+
     const hipWidth = Math.abs(landmarks.hipLeft.x - landmarks.hipRight.x);
     const kneeGapX = Math.abs(landmarks.kneeLeft.x - landmarks.kneeRight.x);
-    const kneeGapRatio = hipWidth > 0.01 ? (kneeGapX / hipWidth) * 100 : 0;
-    this.kneeGapSamples.push(kneeGapRatio);
+    this.kneeGap.push(hipWidth > 0.01 ? (kneeGapX / hipWidth) * 100 : 0);
 
-    // 팔꿈치 너비 대칭 (등 중심 기준 좌우 간격 차이)
     const centerX = (landmarks.shoulderLeft.x + landmarks.shoulderRight.x) / 2;
     const leftSpread = Math.abs(centerX - landmarks.elbowLeft.x);
     const rightSpread = Math.abs(landmarks.elbowRight.x - centerX);
     const avgSpread = (leftSpread + rightSpread) / 2;
-    const elbowWidthAsym = avgSpread > 0.005
+    const elbowWidthA = avgSpread > 0.005
       ? ((rightSpread - leftSpread) / avgSpread) * 100
       : 0;
-    this.elbowWidthSamples.push(Math.abs(elbowWidthAsym));
-    this.elbowWidthBiasSamples.push(elbowWidthAsym);
+    this.elbowWidth.push(Math.abs(elbowWidthA));
+    this.elbowWidthBias.push(elbowWidthA);
 
-    switch (this.angle) {
-      case 'front':
-      case 'back':
-        return analyzeFrontBack(landmarks);
-      case 'side':
-        return analyzeSide(landmarks);
+    return analyzeFrontBack(landmarks);
+  }
+
+  private analyzeSideFrame(landmarks: LandmarkSnapshot): FormIssue[] {
+    this.sideFrameCount++;
+    const issues = analyzeSide(landmarks);
+
+    for (const issue of issues) {
+      if (issue.type === 'body_swing') {
+        this.swingFrames++;
+        this.swingMagnitudeSum += issue.values.swingAmount ?? 0;
+      }
+      if (issue.type === 'kipping') {
+        this.kippingFrames++;
+      }
     }
+
+    return issues;
   }
 
   computeFormScore(issues: FormIssue[]): number {
     return computeFormScore(issues);
   }
 
-  /**
-   * 전체 세션의 밸런스 점수 계산 (0~100)
-   * 5개 항목 가중 평균으로 산출
-   */
   computeBalanceScore(): number {
-    if (this.shoulderAsymSamples.length === 0) return 100;
+    if (this.angle === 'side') {
+      return this.computeSideStabilityScore();
+    }
+    return this.computeFrontBackBalanceScore();
+  }
 
-    const avgShoulder = average(this.shoulderAsymSamples);
-    const avgElbow = average(this.elbowAsymSamples);
-    const avgHip = average(this.hipAsymSamples);
-    const avgElbowWidth = average(this.elbowWidthSamples);
-    // 골반 대비 초과분만 감점 (140% 이상부터 감점, 자연스러운 11자 허용)
-    const avgKneeGap = Math.max(0, average(this.kneeGapSamples) - 140) / 10;
+  private computeFrontBackBalanceScore(): number {
+    if (this.shoulderAsym.empty) return 100;
 
-    // 어깨 20%, 팔꿈치 높이 15%, 골반 10%, 팔꿈치 너비 25%, 다리 반동 30%
+    const avgKneeGap = Math.max(0, this.kneeGap.avg - 140) / 10;
     const weightedAsym =
-      avgShoulder * 0.20 +
-      avgElbow * 0.15 +
-      avgHip * 0.10 +
-      avgElbowWidth * 0.25 +
+      this.shoulderAsym.avg * 0.20 +
+      this.elbowAsym.avg * 0.15 +
+      this.hipAsym.avg * 0.10 +
+      this.elbowWidth.avg * 0.25 +
       avgKneeGap * 0.30;
 
-    // 비대칭 0% → 100점, 10%+ → 0점
     return Math.max(0, Math.round(100 - weightedAsym * 10));
   }
 
-  /**
-   * 부위별 비대칭 상세 데이터 반환 (리포트용)
-   */
+  private computeSideStabilityScore(): number {
+    if (this.sideFrameCount === 0) return 100;
+    const penalty =
+      (this.swingFrames / this.sideFrameCount) * 60 +
+      (this.kippingFrames / this.sideFrameCount) * 40;
+    return Math.max(0, Math.round(100 - penalty));
+  }
+
   getAsymmetryDetails(): AsymmetryDetails {
+    if (this.angle === 'side') {
+      return {
+        shoulder: 0, elbow: 0, hip: 0,
+        shoulderBias: 0, elbowBias: 0, hipBias: 0,
+        kneeGap: 0, elbowWidth: 0, elbowWidthBias: 0,
+      };
+    }
     return {
-      shoulder: average(this.shoulderAsymSamples),
-      elbow: average(this.elbowAsymSamples),
-      hip: average(this.hipAsymSamples),
-      shoulderBias: average(this.shoulderBiasSamples),
-      elbowBias: average(this.elbowBiasSamples),
-      hipBias: average(this.hipBiasSamples),
-      kneeGap: average(this.kneeGapSamples),
-      elbowWidth: average(this.elbowWidthSamples),
-      elbowWidthBias: average(this.elbowWidthBiasSamples),
+      shoulder: this.shoulderAsym.avg,
+      elbow: this.elbowAsym.avg,
+      hip: this.hipAsym.avg,
+      shoulderBias: this.shoulderBias.avg,
+      elbowBias: this.elbowBias.avg,
+      hipBias: this.hipBias.avg,
+      kneeGap: this.kneeGap.avg,
+      elbowWidth: this.elbowWidth.avg,
+      elbowWidthBias: this.elbowWidthBias.avg,
     };
   }
-}
 
-function average(arr: number[]): number {
-  if (arr.length === 0) return 0;
-  return arr.reduce((a, b) => a + b, 0) / arr.length;
+  getSideDetails() {
+    if (this.sideFrameCount === 0) return null;
+    return {
+      swingRate: this.swingFrames / this.sideFrameCount,
+      avgSwingMagnitude: this.swingFrames > 0 ? this.swingMagnitudeSum / this.swingFrames : 0,
+      kippingRate: this.kippingFrames / this.sideFrameCount,
+      totalFrames: this.sideFrameCount,
+    };
+  }
 }

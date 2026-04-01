@@ -22,32 +22,39 @@ function ResultPage() {
   }, [id]);
 
   if (!session) {
-    return <div className="py-8 text-center text-stone-400">로딩 중...</div>;
+    return <div className="pt-20 text-center text-stone-500 text-sm">로딩 중...</div>;
   }
 
   const angleLabel = session.angle === 'front' ? '정면' : session.angle === 'back' ? '후면' : '측면';
 
   return (
-    <div className="py-6 space-y-4">
+    <div className="pt-10 pb-4 space-y-5">
       <div>
         <h2 className="text-2xl font-bold uppercase tracking-wider font-[Barlow_Condensed]">분석 리포트</h2>
-        <p className="text-xs text-stone-400 mt-1">
-          {new Date(session.date).toLocaleDateString()} · {angleLabel} · {session.totalReps}회
+        <p className="text-[11px] text-stone-500 mt-1.5">
+          {new Date(session.date).toLocaleDateString('ko-KR')} · {angleLabel} · {session.totalReps}회
         </p>
       </div>
 
       <div className="space-y-4">
         <div className="grid grid-cols-2 gap-3">
           <ScoreCard label="종합 점수" score={session.overallScore} />
-          <ScoreCard label="밸런스 점수" score={session.balanceScore} color="#10b981" />
+          <ScoreCard label={session.angle === 'side' ? '폼 안정성' : '밸런스 점수'} score={session.balanceScore} color="#10b981" />
         </div>
         <div ref={reportRef} className="space-y-4">
           <SetChart sets={session.sets} />
           {(session.angle === 'front' || session.angle === 'back') && (
-            <BodyDiagram sets={session.sets} asymmetryDetails={session.asymmetryDetails} />
+            <BodyDiagram asymmetryDetails={session.asymmetryDetails} />
           )}
         </div>
-        <FeedbackList sets={session.sets} />
+        <FeedbackList
+          sets={session.sets}
+          overallScore={session.overallScore}
+          balanceScore={session.balanceScore}
+          asymmetryDetails={session.asymmetryDetails}
+          totalReps={session.totalReps}
+          angle={session.angle}
+        />
       </div>
 
       <ReportExport targetRef={reportRef} />

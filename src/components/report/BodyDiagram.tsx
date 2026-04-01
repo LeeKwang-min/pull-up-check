@@ -1,33 +1,21 @@
-import { useEffect, useRef } from 'react';
-import * as d3 from 'd3';
-import type { AsymmetryDetails, SetData } from '../../types/analysis';
+import type { AsymmetryDetails } from '../../types/analysis';
 
 interface BodyDiagramProps {
-  sets: SetData[];
   asymmetryDetails?: AsymmetryDetails;
 }
 
-interface BodyPart {
-  id: string;
-  x: number;
-  y: number;
-  width: number;
-  height: number;
-  asymValue: number;
+function statusColor(asym: number): string {
+  if (asym >= 15) return '#ef4444';
+  if (asym >= 5) return '#eab308';
+  return '#22c55e';
 }
 
-function getStatus(asym: number): { color: string } {
-  if (asym >= 15) return { color: '#ef4444' };
-  if (asym >= 5) return { color: '#eab308' };
-  return { color: '#22c55e' };
-}
-
-function getBiasLabel(bias: number): string {
+function biasLabel(bias: number): string {
   if (Math.abs(bias) < 0.3) return '균등';
   return bias > 0 ? '오른쪽이 더 낮음' : '왼쪽이 더 낮음';
 }
 
-function getBiasArrow(bias: number): string {
+function biasArrow(bias: number): string {
   if (Math.abs(bias) < 0.3) return '=';
   return bias > 0 ? 'R↓' : 'L↓';
 }
@@ -38,162 +26,194 @@ const DEFAULT_DETAILS: AsymmetryDetails = {
   kneeGap: 0, elbowWidth: 0, elbowWidthBias: 0,
 };
 
-export function BodyDiagram({ sets, asymmetryDetails }: BodyDiagramProps) {
-  const svgRef = useRef<SVGSVGElement>(null);
-  const d = asymmetryDetails ?? DEFAULT_DETAILS;
+/**
+ * Anatomical body zone component.
+ * Each zone is a rounded rect that glows with its status color.
+ */
+function Zone({ x, y, w, h, rx, color, opacity = 0.55 }: {
+  x: number; y: number; w: number; h: number; rx: number; color: string; opacity?: number;
+}) {
+  return (
+    <>
+      <rect x={x} y={y} width={w} height={h} rx={rx}
+        fill={color} opacity={opacity * 0.3} filter="url(#zone-glow)" />
+      <rect x={x} y={y} width={w} height={h} rx={rx}
+        fill={color} opacity={opacity} />
+    </>
+  );
+}
 
-  // 다리 간격을 0-15 스케일로 변환 (140% 이하는 정상, 초과분만 반영)
+export function BodyDiagram({ asymmetryDetails }: BodyDiagramProps) {
+  const d = asymmetryDetails ?? DEFAULT_DETAILS;
   const kneeGapScaled = Math.max(0, d.kneeGap - 140) / 10;
 
-  useEffect(() => {
-    if (!svgRef.current) return;
-    const svg = d3.select(svgRef.current);
-    svg.selectAll('*').remove();
+  const shoulderColor = statusColor(d.shoulder);
+  const armColor = statusColor(Math.max(d.elbow, d.elbowWidth));
+  const coreColor = statusColor(d.hip);
+  const legColor = statusColor(kneeGapScaled);
 
-    const colorScale = d3.scaleLinear<string>()
-      .domain([0, 5, 15]).range(['#22c55e', '#eab308', '#ef4444']).clamp(true);
-
-    // 머리
-    svg.append('ellipse').attr('cx', 100).attr('cy', 25).attr('rx', 16).attr('ry', 20)
-      .attr('fill', '#44403C').attr('stroke', '#57534E');
-    // 몸통
-    svg.append('rect').attr('x', 68).attr('y', 48).attr('width', 64).attr('height', 70)
-      .attr('rx', 8).attr('fill', '#44403C').attr('stroke', '#57534E');
-    // 다리 실루엣
-    svg.append('rect').attr('x', 72).attr('y', 120).attr('width', 22).attr('height', 50)
-      .attr('rx', 4).attr('fill', '#44403C').attr('stroke', '#57534E');
-    svg.append('rect').attr('x', 106).attr('y', 120).attr('width', 22).attr('height', 50)
-      .attr('rx', 4).attr('fill', '#44403C').attr('stroke', '#57534E');
-
-    const bodyParts: BodyPart[] = [
-      { id: 'shoulder-l', x: 55, y: 50, width: 28, height: 18, asymValue: d.shoulder },
-      { id: 'shoulder-r', x: 117, y: 50, width: 28, height: 18, asymValue: d.shoulder },
-      { id: 'arm-l', x: 40, y: 72, width: 18, height: 45, asymValue: Math.max(d.elbow, d.elbowWidth) },
-      { id: 'arm-r', x: 142, y: 72, width: 18, height: 45, asymValue: Math.max(d.elbow, d.elbowWidth) },
-      { id: 'back-l', x: 72, y: 72, width: 28, height: 45, asymValue: d.hip },
-      { id: 'back-r', x: 100, y: 72, width: 28, height: 45, asymValue: d.hip },
-      { id: 'leg-l', x: 74, y: 122, width: 18, height: 46, asymValue: kneeGapScaled },
-      { id: 'leg-r', x: 108, y: 122, width: 18, height: 46, asymValue: kneeGapScaled },
-    ];
-
-    bodyParts.forEach((part) => {
-      svg.append('rect')
-        .attr('x', part.x).attr('y', part.y)
-        .attr('width', part.width).attr('height', part.height)
-        .attr('rx', 4).attr('fill', colorScale(part.asymValue)).attr('opacity', 0.6);
-    });
-
-    // 범례
-    const legend = svg.append('g').attr('transform', 'translate(10, 182)');
-    [
-      { color: '#22c55e', label: '양호' },
-      { color: '#eab308', label: '주의' },
-      { color: '#ef4444', label: '불균형' },
-    ].forEach((item, i) => {
-      legend.append('rect').attr('x', i * 65).attr('y', 0).attr('width', 10).attr('height', 10)
-        .attr('rx', 2).attr('fill', item.color);
-      legend.append('text').attr('x', i * 65 + 14).attr('y', 9)
-        .attr('fill', '#A8A29E').attr('font-size', '10px').text(item.label);
-    });
-  }, [sets, d, kneeGapScaled]);
-
-  // 감점 계산 (가중치 합 = 10)
   const items = [
     {
       label: '어깨 높이', weight: '20%', asym: d.shoulder, deduction: d.shoulder * 2,
-      bias: d.shoulderBias, biasType: 'height' as const,
+      bias: d.shoulderBias, biasType: 'height' as const, color: shoulderColor,
     },
     {
       label: '팔꿈치 높이', weight: '15%', asym: d.elbow, deduction: d.elbow * 1.5,
-      bias: d.elbowBias, biasType: 'height' as const,
+      bias: d.elbowBias, biasType: 'height' as const, color: armColor,
     },
     {
       label: '골반', weight: '10%', asym: d.hip, deduction: d.hip * 1.0,
-      bias: d.hipBias, biasType: 'height' as const,
+      bias: d.hipBias, biasType: 'height' as const, color: coreColor,
     },
     {
       label: '팔꿈치 너비', weight: '25%', asym: d.elbowWidth, deduction: d.elbowWidth * 2.5,
-      bias: d.elbowWidthBias, biasType: 'width' as const,
+      bias: d.elbowWidthBias, biasType: 'width' as const, color: armColor,
     },
     {
       label: '다리 반동', weight: '30%', asym: d.kneeGap, deduction: (Math.max(0, d.kneeGap - 140) / 10) * 3,
-      bias: 0, biasType: 'gap' as const,
+      bias: 0, biasType: 'gap' as const, color: legColor,
     },
   ];
 
   const totalDeduction = items.reduce((sum, i) => sum + i.deduction, 0);
 
   return (
-    <div className="bg-stone-800 rounded-2xl p-4 border border-amber-500/10">
-      <h3 className="text-sm font-semibold text-stone-300 mb-2">신체 밸런스</h3>
-      <svg ref={svgRef} viewBox="0 0 200 200" className="w-full max-w-[200px] mx-auto" />
+    <div className="surface-card rounded-2xl p-5">
+      <h3 className="section-label mb-4">신체 밸런스</h3>
 
+      {/* ── Figure ── */}
+      <div className="flex justify-center mb-5">
+        <svg viewBox="0 0 160 220" className="w-40 h-auto">
+          <defs>
+            <filter id="zone-glow" x="-40%" y="-40%" width="180%" height="180%">
+              <feGaussianBlur stdDeviation="4" result="blur" />
+              <feComposite in="SourceGraphic" in2="blur" operator="over" />
+            </filter>
+            <radialGradient id="bg-gradient" cx="50%" cy="40%" r="60%">
+              <stop offset="0%" stopColor="#292524" stopOpacity="0.5" />
+              <stop offset="100%" stopColor="#0c0a09" stopOpacity="0" />
+            </radialGradient>
+          </defs>
+
+          {/* Background glow */}
+          <ellipse cx="80" cy="105" rx="70" ry="95" fill="url(#bg-gradient)" />
+
+          {/* ── Base silhouette (dark neutral) ── */}
+          {/* Head */}
+          <ellipse cx="80" cy="22" rx="14" ry="17" fill="#292524" />
+          {/* Neck */}
+          <rect x="73" y="38" width="14" height="10" rx="4" fill="#292524" />
+          {/* Torso */}
+          <rect x="56" y="47" width="48" height="62" rx="8" fill="#292524" />
+          {/* Left upper arm */}
+          <rect x="36" y="50" width="18" height="38" rx="9" fill="#292524" />
+          {/* Right upper arm */}
+          <rect x="106" y="50" width="18" height="38" rx="9" fill="#292524" />
+          {/* Left forearm */}
+          <rect x="34" y="90" width="16" height="36" rx="8" fill="#292524" />
+          {/* Right forearm */}
+          <rect x="110" y="90" width="16" height="36" rx="8" fill="#292524" />
+          {/* Left upper leg */}
+          <rect x="58" y="112" width="20" height="46" rx="8" fill="#292524" />
+          {/* Right upper leg */}
+          <rect x="82" y="112" width="20" height="46" rx="8" fill="#292524" />
+          {/* Left lower leg */}
+          <rect x="60" y="160" width="16" height="40" rx="7" fill="#292524" />
+          {/* Right lower leg */}
+          <rect x="84" y="160" width="16" height="40" rx="7" fill="#292524" />
+
+          {/* ── Colored zones ── */}
+          {/* Shoulders */}
+          <Zone x={56} y={47} w={22} h={16} rx={6} color={shoulderColor} />
+          <Zone x={82} y={47} w={22} h={16} rx={6} color={shoulderColor} />
+          {/* Arms (upper + forearm) */}
+          <Zone x={36} y={50} w={18} h={38} rx={9} color={armColor} />
+          <Zone x={106} y={50} w={18} h={38} rx={9} color={armColor} />
+          <Zone x={34} y={90} w={16} h={36} rx={8} color={armColor} opacity={0.4} />
+          <Zone x={110} y={90} w={16} h={36} rx={8} color={armColor} opacity={0.4} />
+          {/* Core / hip */}
+          <Zone x={58} y={80} w={44} h={30} rx={6} color={coreColor} />
+          {/* Legs */}
+          <Zone x={58} y={112} w={20} h={46} rx={8} color={legColor} />
+          <Zone x={82} y={112} w={20} h={46} rx={8} color={legColor} />
+          <Zone x={60} y={160} w={16} h={40} rx={7} color={legColor} opacity={0.35} />
+          <Zone x={84} y={160} w={16} h={40} rx={7} color={legColor} opacity={0.35} />
+        </svg>
+      </div>
+
+      {/* ── Legend ── */}
+      <div className="flex items-center justify-center gap-5 mb-6">
+        {[
+          { color: '#22c55e', label: '양호' },
+          { color: '#eab308', label: '주의' },
+          { color: '#ef4444', label: '불균형' },
+        ].map((item) => (
+          <div key={item.label} className="flex items-center gap-1.5">
+            <span className="w-2 h-2 rounded-full" style={{ backgroundColor: item.color }} />
+            <span className="text-[11px] text-stone-500">{item.label}</span>
+          </div>
+        ))}
+      </div>
+
+      {/* ── Deduction table ── */}
       {asymmetryDetails && (
-        <div className="mt-4 space-y-3">
-          <h4 className="text-xs font-semibold text-stone-400 uppercase tracking-wider">감점 내역</h4>
-          {items.map((item) => {
-            const status = getStatus(
-              item.biasType === 'gap' ? Math.max(0, item.asym - 140) / 10 : item.asym,
-            );
+        <div className="space-y-1">
+          <h4 className="section-label mb-2">감점 내역</h4>
 
-            return (
-              <div key={item.label} className="space-y-1">
-                <div className="flex items-center justify-between text-xs">
+          <div className="divide-y divide-stone-800/80">
+            {items.map((item) => (
+              <div key={item.label} className="py-2.5">
+                <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <span
-                      className="w-2 h-2 rounded-full inline-block flex-shrink-0"
-                      style={{ backgroundColor: status.color }}
-                    />
-                    <span className="text-stone-300">{item.label}</span>
-                    <span className="text-stone-500">({item.weight})</span>
+                    <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ backgroundColor: item.color }} />
+                    <span className="text-[13px] text-stone-300">{item.label}</span>
+                    <span className="text-[11px] text-stone-600">{item.weight}</span>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-stone-400">
+                  <div className="flex items-center gap-2.5 text-[12px]">
+                    <span className="text-stone-500 tabular-nums">
                       {item.biasType === 'gap'
-                        ? `간격 ${item.asym.toFixed(0)}%`
-                        : `비대칭 ${item.asym.toFixed(1)}%`}
+                        ? `${item.asym.toFixed(0)}%`
+                        : `${item.asym.toFixed(1)}%`}
                     </span>
-                    <span className="text-amber-400 font-medium">
-                      -{item.deduction.toFixed(1)}점
+                    <span className={`font-semibold tabular-nums font-[Barlow_Condensed] ${
+                      item.deduction > 5 ? 'text-red-400' : item.deduction > 1 ? 'text-amber-400' : 'text-stone-500'
+                    }`}>
+                      -{item.deduction.toFixed(1)}
                     </span>
                   </div>
                 </div>
 
-                {/* 방향 정보 */}
+                {/* Bias info */}
                 {item.biasType === 'height' && Math.abs(item.bias) >= 0.3 && (
-                  <div className="flex items-center gap-1.5 ml-4 text-[10px]">
-                    <span className={`font-mono font-bold ${item.bias > 0 ? 'text-blue-400' : 'text-orange-400'}`}>
-                      {getBiasArrow(item.bias)}
+                  <div className="flex items-center gap-1.5 mt-1 ml-3.5">
+                    <span className={`text-[10px] font-mono font-bold ${item.bias > 0 ? 'text-blue-400/70' : 'text-orange-400/70'}`}>
+                      {biasArrow(item.bias)}
                     </span>
-                    <span className="text-stone-500">
-                      {getBiasLabel(item.bias)} (평균 {Math.abs(item.bias).toFixed(1)}%)
+                    <span className="text-[10px] text-stone-600">
+                      {biasLabel(item.bias)} ({Math.abs(item.bias).toFixed(1)}%)
                     </span>
                   </div>
                 )}
                 {item.biasType === 'width' && Math.abs(item.bias) >= 0.3 && (
-                  <div className="flex items-center gap-1.5 ml-4 text-[10px]">
-                    <span className={`font-mono font-bold ${item.bias > 0 ? 'text-blue-400' : 'text-orange-400'}`}>
+                  <div className="flex items-center gap-1.5 mt-1 ml-3.5">
+                    <span className={`text-[10px] font-mono font-bold ${item.bias > 0 ? 'text-blue-400/70' : 'text-orange-400/70'}`}>
                       {item.bias > 0 ? 'R→' : 'L→'}
                     </span>
-                    <span className="text-stone-500">
-                      {item.bias > 0 ? '오른쪽이 더 벌어짐' : '왼쪽이 더 벌어짐'} (평균 {Math.abs(item.bias).toFixed(1)}%)
-                    </span>
-                  </div>
-                )}
-                {item.biasType === 'gap' && item.asym > 140 && (
-                  <div className="flex items-center gap-1.5 ml-4 text-[10px]">
-                    <span className="font-mono font-bold text-orange-400">!</span>
-                    <span className="text-stone-500">
-                      다리 반동 없이 자연스럽게 늘어뜨리세요
+                    <span className="text-[10px] text-stone-600">
+                      {item.bias > 0 ? '오른쪽이 더 벌어짐' : '왼쪽이 더 벌어짐'} ({Math.abs(item.bias).toFixed(1)}%)
                     </span>
                   </div>
                 )}
               </div>
-            );
-          })}
-          <div className="border-t border-stone-700 pt-1 flex justify-between text-xs">
-            <span className="text-stone-400">합계</span>
-            <span className="text-amber-400 font-semibold">
+            ))}
+          </div>
+
+          {/* Total */}
+          <div className="pt-3 mt-1 border-t border-stone-700/50 flex justify-between items-center">
+            <span className="text-[13px] text-stone-400">합계</span>
+            <span className={`text-sm font-bold tabular-nums font-[Barlow_Condensed] ${
+              totalDeduction > 20 ? 'text-red-400' : totalDeduction > 5 ? 'text-amber-400' : 'text-emerald-400'
+            }`}>
               -{totalDeduction.toFixed(1)}점
             </span>
           </div>

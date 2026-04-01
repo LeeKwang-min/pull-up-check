@@ -13,6 +13,10 @@ export async function getAllSessions(): Promise<Session[]> {
   return db.sessions.orderBy('date').reverse().toArray();
 }
 
+export async function getLatestSession(): Promise<Session | undefined> {
+  return db.sessions.orderBy('date').reverse().first();
+}
+
 export async function deleteSession(id: string): Promise<void> {
   await db.sessions.delete(id);
 }

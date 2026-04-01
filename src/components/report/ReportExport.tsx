@@ -9,7 +9,7 @@ function getOptions(el: HTMLElement) {
   const rect = el.getBoundingClientRect();
   const pad = 16;
   return {
-    backgroundColor: '#1C1917',
+    backgroundColor: '#0c0a09',
     pixelRatio: 2,
     width: rect.width + pad * 2,
     height: rect.height + pad * 2,
@@ -34,7 +34,6 @@ export function ReportExport({ targetRef }: ReportExportProps) {
       document.body.removeChild(link);
     } catch (err) {
       console.error('이미지 저장 실패:', err);
-      // 폴백: blob URL을 새 탭에서 열기 (모바일 Safari 등)
       try {
         const blob = await toBlob(targetRef.current, getOptions(targetRef.current));
         if (blob) {
@@ -70,12 +69,15 @@ export function ReportExport({ targetRef }: ReportExportProps) {
       <button
         onClick={handleSaveImage}
         disabled={saving}
-        className="flex-1 bg-stone-800 hover:bg-stone-700 disabled:opacity-50 text-stone-300 font-semibold py-3 rounded-xl text-sm transition-colors border border-stone-700 cursor-pointer"
+        className="flex-1 surface-card text-stone-300 font-medium py-3 rounded-xl text-sm cursor-pointer hover:bg-stone-800/50 active:scale-[0.97] transition-all disabled:opacity-40"
       >
         {saving ? '저장 중...' : '이미지 저장'}
       </button>
       {typeof navigator !== 'undefined' && 'share' in navigator && (
-        <button onClick={handleShare} className="flex-1 bg-gradient-to-r from-amber-500 to-amber-600 text-black font-bold py-3 rounded-xl text-sm transition-all cursor-pointer uppercase tracking-wider font-[Barlow_Condensed]">
+        <button
+          onClick={handleShare}
+          className="flex-1 bg-gradient-to-r from-amber-500 to-amber-600 text-stone-950 font-bold py-3 rounded-xl text-sm cursor-pointer uppercase tracking-wider font-[Barlow_Condensed] active:scale-[0.97] transition-all shadow-lg shadow-amber-500/15"
+        >
           공유
         </button>
       )}

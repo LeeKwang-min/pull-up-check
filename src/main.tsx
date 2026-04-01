@@ -9,6 +9,12 @@ createRoot(document.getElementById('root')!).render(
   </StrictMode>,
 );
 
-if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('/sw.js');
+// Serwist Service Worker 등록
+async function registerSW() {
+  if ('serviceWorker' in navigator) {
+    const { getSerwist } = await import('virtual:serwist');
+    const serwist = await getSerwist();
+    serwist?.register();
+  }
 }
+registerSW();

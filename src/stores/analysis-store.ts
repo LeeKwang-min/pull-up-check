@@ -51,7 +51,7 @@ export const useAnalysisStore = create<AnalysisState>((set, _get) => ({
     }),
 
   addAlert: (alert) =>
-    set((state) => ({ alerts: [...state.alerts, alert] })),
+    set((state) => ({ alerts: [...state.alerts.slice(-9), alert] })),
 
   updateLandmarks: (landmarks) => set({ landmarks }),
 

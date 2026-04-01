@@ -74,8 +74,11 @@ function CameraAnalysisPage() {
 
     return () => {
       streamRef.current?.getTracks().forEach((t) => t.stop());
+      streamRef.current = null;
       cancelAnimationFrame(animationRef.current);
       analyzerRef.current?.destroy();
+      analyzerRef.current = null;
+      useAnalysisStore.getState().stopAnalysis();
     };
   }, [facingMode]);
 
@@ -180,20 +183,27 @@ function CameraAnalysisPage() {
 
   if (analysisComplete && session) {
     return (
-      <div className="py-4 space-y-4">
+      <div className="pt-10 pb-4 space-y-5">
         <div className="space-y-4">
-          <h3 className="text-lg font-bold uppercase tracking-wider font-[Barlow_Condensed]">분석 리포트</h3>
+          <h3 className="text-2xl font-bold uppercase tracking-wider font-[Barlow_Condensed]">분석 리포트</h3>
           <div className="grid grid-cols-2 gap-3">
             <ScoreCard label="종합 점수" score={session.overallScore} />
-            <ScoreCard label="밸런스 점수" score={session.balanceScore} color="#10b981" />
+            <ScoreCard label={session.angle === 'side' ? '폼 안정성' : '밸런스 점수'} score={session.balanceScore} color="#10b981" />
           </div>
           <div ref={reportRef} className="space-y-4">
             <SetChart sets={session.sets} />
             {(session.angle === 'front' || session.angle === 'back') && (
-              <BodyDiagram sets={session.sets} asymmetryDetails={session.asymmetryDetails} />
+              <BodyDiagram asymmetryDetails={session.asymmetryDetails} />
             )}
           </div>
-          <FeedbackList sets={session.sets} />
+          <FeedbackList
+            sets={session.sets}
+            overallScore={session.overallScore}
+            balanceScore={session.balanceScore}
+            asymmetryDetails={session.asymmetryDetails}
+            totalReps={session.totalReps}
+            angle={session.angle}
+          />
         </div>
         <ReportExport targetRef={reportRef} />
       </div>
@@ -201,8 +211,8 @@ function CameraAnalysisPage() {
   }
 
   return (
-    <div className="py-4 space-y-4">
-      <div className="relative bg-black rounded-2xl overflow-hidden">
+    <div className="pt-6 pb-4 space-y-4">
+      <div className="relative bg-black rounded-2xl overflow-hidden shadow-lg shadow-black/40">
         <div className={facingMode === 'user' ? 'scale-x-[-1]' : ''}>
           <video
             ref={videoRef}
@@ -238,7 +248,7 @@ function CameraAnalysisPage() {
       </div>
 
       {error && (
-        <div className="bg-red-900/20 border border-red-500/20 rounded-xl p-3 text-sm text-red-400">
+        <div className="bg-red-500/8 border border-red-500/15 rounded-xl px-4 py-3 text-[13px] text-red-400">
           {error}
         </div>
       )}
@@ -246,9 +256,9 @@ function CameraAnalysisPage() {
       <LiveStats repCount={repCount} currentSet={currentSet} alerts={alerts} />
 
       {loading ? (
-        <div className="text-center py-4">
-          <div className="text-sm text-stone-300">MediaPipe 모델 로딩 중...</div>
-          <div className="text-xs text-stone-400 mt-1">첫 실행 시 모델 다운로드가 필요합니다</div>
+        <div className="text-center py-6">
+          <div className="text-sm text-stone-300 font-medium">MediaPipe 모델 로딩 중...</div>
+          <div className="text-[11px] text-stone-500 mt-1.5">첫 실행 시 모델 다운로드가 필요합니다</div>
         </div>
       ) : (
         <CameraControls
