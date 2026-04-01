@@ -22,15 +22,17 @@ function ResultPage() {
   }, [id]);
 
   if (!session) {
-    return <div className="py-8 text-center text-zinc-500">로딩 중...</div>;
+    return <div className="py-8 text-center text-stone-500">로딩 중...</div>;
   }
 
+  const angleLabel = session.angle === 'front' ? '정면' : session.angle === 'back' ? '후면' : '측면';
+
   return (
-    <div className="py-4 space-y-4">
+    <div className="py-6 space-y-4">
       <div>
-        <h2 className="text-xl font-bold">분석 리포트</h2>
-        <p className="text-xs text-zinc-500">
-          {new Date(session.date).toLocaleDateString()} · {session.angle} 뷰 · {session.totalReps} 총 회
+        <h2 className="text-2xl font-bold uppercase tracking-wider font-[Barlow_Condensed]">분석 리포트</h2>
+        <p className="text-xs text-stone-500 mt-1">
+          {new Date(session.date).toLocaleDateString()} · {angleLabel} · {session.totalReps}회
         </p>
       </div>
 

@@ -44,7 +44,7 @@ function generateFeedback(sets: SetData[]): Feedback[] {
 }
 
 const severityStyles = {
-  info: 'bg-blue-900/30 border-blue-800 text-blue-300',
+  info: 'bg-stone-800/50 border-stone-700 text-stone-300',
   low: 'bg-green-900/30 border-green-800 text-green-300',
   medium: 'bg-yellow-900/30 border-yellow-800 text-yellow-300',
   high: 'bg-red-900/30 border-red-800 text-red-300',
@@ -53,13 +53,13 @@ const severityStyles = {
 export function FeedbackList({ sets }: FeedbackListProps) {
   const feedback = generateFeedback(sets);
   if (feedback.length === 0) {
-    return <div className="bg-zinc-900 rounded-xl p-4 text-center text-zinc-500 text-sm">훌륭한 자세! 감지된 문제가 없습니다.</div>;
+    return <div className="bg-stone-900 rounded-2xl p-4 border border-amber-500/10 text-center text-stone-500 text-sm">훌륭한 자세! 감지된 문제가 없습니다.</div>;
   }
   return (
     <div className="space-y-2">
-      <h3 className="text-sm font-semibold text-zinc-300">개선 피드백</h3>
+      <h3 className="text-sm font-semibold text-stone-300 uppercase tracking-wider font-[Barlow_Condensed]">개선 피드백</h3>
       {feedback.map((fb, i) => (
-        <div key={i} className={`border rounded-lg px-3 py-2 text-sm ${severityStyles[fb.severity]}`}>{fb.text}</div>
+        <div key={i} className={`border rounded-xl px-3 py-2 text-sm ${severityStyles[fb.severity]}`}>{fb.text}</div>
       ))}
     </div>
   );

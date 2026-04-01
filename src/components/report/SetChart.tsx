@@ -32,7 +32,7 @@ export function SetChart({ sets }: SetChartProps) {
       .attr('y', (d) => y(d.reps.length))
       .attr('width', x.bandwidth())
       .attr('height', (d) => height - y(d.reps.length))
-      .attr('fill', '#3b82f6')
+      .attr('fill', '#F59E0B')
       .attr('rx', 4);
 
     const lineY = d3.scaleLinear().domain([0, 100]).range([height, 0]);
@@ -41,7 +41,7 @@ export function SetChart({ sets }: SetChartProps) {
       .y((d) => lineY(d.averageFormScore))
       .curve(d3.curveMonotoneX);
 
-    g.append('path').datum(sets).attr('fill', 'none').attr('stroke', '#f59e0b').attr('stroke-width', 2).attr('d', line);
+    g.append('path').datum(sets).attr('fill', 'none').attr('stroke', '#D97706').attr('stroke-width', 2).attr('d', line);
 
     g.selectAll('.dot')
       .data(sets)
@@ -49,23 +49,23 @@ export function SetChart({ sets }: SetChartProps) {
       .attr('cx', (_, i) => x(`세트 ${i + 1}`)! + x.bandwidth() / 2)
       .attr('cy', (d) => lineY(d.averageFormScore))
       .attr('r', 4)
-      .attr('fill', '#f59e0b');
+      .attr('fill', '#D97706');
 
     g.append('g').attr('transform', `translate(0,${height})`).call(d3.axisBottom(x))
-      .selectAll('text').attr('fill', '#a1a1aa').style('font-size', '11px');
+      .selectAll('text').attr('fill', '#78716C').style('font-size', '11px');
 
     g.append('g').call(d3.axisLeft(y).ticks(5))
-      .selectAll('text').attr('fill', '#a1a1aa').style('font-size', '11px');
+      .selectAll('text').attr('fill', '#78716C').style('font-size', '11px');
 
-    svg.selectAll('.domain, .tick line').attr('stroke', '#3f3f46');
+    svg.selectAll('.domain, .tick line').attr('stroke', '#292524');
   }, [sets]);
 
   return (
-    <div className="bg-zinc-900 rounded-xl p-4">
-      <h3 className="text-sm font-semibold text-zinc-300 mb-2">세트별 분석</h3>
-      <div className="flex gap-4 text-xs text-zinc-500 mb-2">
-        <span className="flex items-center gap-1"><span className="w-3 h-3 bg-blue-500 rounded-sm inline-block" /> 횟수</span>
-        <span className="flex items-center gap-1"><span className="w-3 h-3 bg-amber-500 rounded-full inline-block" /> 자세 점수</span>
+    <div className="bg-stone-900 rounded-2xl p-4 border border-amber-500/10">
+      <h3 className="text-sm font-semibold text-stone-300 mb-2">세트별 분석</h3>
+      <div className="flex gap-4 text-xs text-stone-500 mb-2">
+        <span className="flex items-center gap-1"><span className="w-3 h-3 bg-amber-500 rounded-sm inline-block" /> 횟수</span>
+        <span className="flex items-center gap-1"><span className="w-3 h-3 rounded-full inline-block" style={{ background: '#D97706' }} /> 자세 점수</span>
       </div>
       <svg ref={svgRef} width="360" height="200" className="w-full" />
     </div>

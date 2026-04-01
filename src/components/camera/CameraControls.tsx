@@ -7,27 +7,27 @@ interface CameraControlsProps {
 
 export function CameraControls({ isAnalyzing, onStartStop, onNextSet, onFinish }: CameraControlsProps) {
   return (
-    <div className="flex items-center justify-center gap-4">
+    <div className="flex items-center justify-center gap-5">
       <button
         onClick={onNextSet}
         disabled={!isAnalyzing}
-        className="bg-zinc-800 hover:bg-zinc-700 disabled:opacity-30 text-zinc-200 font-medium py-2 px-4 rounded-lg text-sm transition-colors"
+        className="bg-stone-900 hover:bg-stone-800 disabled:opacity-30 text-stone-400 font-semibold py-2.5 px-5 rounded-xl text-sm transition-colors border border-stone-800 uppercase tracking-wider font-[Barlow_Condensed] cursor-pointer"
       >
         다음 세트
       </button>
       <button
         onClick={onStartStop}
-        className={`w-16 h-16 rounded-full font-bold text-sm transition-all ${
+        className={`w-16 h-16 rounded-full font-bold text-sm transition-all cursor-pointer uppercase tracking-wider font-[Barlow_Condensed] ${
           isAnalyzing
-            ? 'bg-red-600 hover:bg-red-500 text-white ring-4 ring-red-600/30'
-            : 'bg-blue-600 hover:bg-blue-500 text-white ring-4 ring-blue-600/30'
+            ? 'bg-red-600 hover:bg-red-500 text-white ring-4 ring-red-600/20'
+            : 'bg-gradient-to-br from-amber-500 to-amber-600 text-black ring-4 ring-amber-500/20 shadow-lg shadow-amber-500/20'
         }`}
       >
         {isAnalyzing ? '정지' : '시작'}
       </button>
       <button
         onClick={onFinish}
-        className="bg-zinc-800 hover:bg-zinc-700 text-zinc-200 font-medium py-2 px-4 rounded-lg text-sm transition-colors"
+        className="bg-stone-900 hover:bg-stone-800 text-stone-400 font-semibold py-2.5 px-5 rounded-xl text-sm transition-colors border border-stone-800 uppercase tracking-wider font-[Barlow_Condensed] cursor-pointer"
       >
         완료
       </button>

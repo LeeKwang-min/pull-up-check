@@ -10,20 +10,20 @@ export function LiveStats({ repCount, currentSet, alerts }: LiveStatsProps) {
   const latestAlert = alerts.length > 0 ? alerts[alerts.length - 1] : null;
 
   return (
-    <div className="flex items-center justify-between bg-zinc-900/80 backdrop-blur rounded-xl p-3">
+    <div className="flex items-center justify-between bg-stone-900 border border-amber-500/10 rounded-2xl p-4">
       <div className="text-center">
-        <div className="text-3xl font-bold tabular-nums">{repCount}</div>
-        <div className="text-xs text-zinc-500">회</div>
+        <div className="text-4xl font-bold tabular-nums text-amber-500 font-[Barlow_Condensed]">{repCount}</div>
+        <div className="text-xs text-stone-500">회</div>
       </div>
       <div className="text-center">
-        <div className="text-xl font-semibold text-zinc-300">{currentSet} 세트</div>
+        <div className="text-lg font-semibold text-stone-300 uppercase tracking-wider font-[Barlow_Condensed]">세트 {currentSet}</div>
       </div>
       {latestAlert && (
         <div
-          className={`text-xs px-2 py-1 rounded-lg max-w-[140px] truncate ${
+          className={`text-xs px-3 py-1.5 rounded-lg max-w-[140px] truncate ${
             latestAlert.severity === 'high'
-              ? 'bg-red-900/50 text-red-300'
-              : 'bg-yellow-900/50 text-yellow-300'
+              ? 'bg-red-900/30 text-red-400 border border-red-500/20'
+              : 'bg-yellow-900/30 text-yellow-400 border border-yellow-500/20'
           }`}
         >
           {latestAlert.detail}

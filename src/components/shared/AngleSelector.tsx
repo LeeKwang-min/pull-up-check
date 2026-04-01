@@ -18,10 +18,10 @@ export function AngleSelector({ value, onChange }: AngleSelectorProps) {
         <button
           key={opt.value}
           onClick={() => onChange(opt.value)}
-          className={`rounded-lg p-3 text-center transition-all ${
+          className={`rounded-xl p-3 text-center transition-all cursor-pointer ${
             value === opt.value
-              ? 'bg-blue-600 text-white ring-2 ring-blue-400'
-              : 'bg-zinc-800 text-zinc-400 hover:bg-zinc-700'
+              ? 'bg-amber-500/15 text-amber-500 ring-2 ring-amber-500/30 border border-amber-500/20'
+              : 'bg-stone-900 text-stone-400 hover:bg-stone-800 border border-stone-800'
           }`}
         >
           <div className="font-semibold text-sm">{opt.label}</div>

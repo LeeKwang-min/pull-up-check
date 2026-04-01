@@ -10,14 +10,14 @@ function SettingsPage() {
   const { defaultAngle, setDefaultAngle } = useSessionStore();
 
   return (
-    <div className="py-4 space-y-6">
-      <h2 className="text-xl font-bold">설정</h2>
+    <div className="py-6 space-y-6">
+      <h2 className="text-2xl font-bold uppercase tracking-wider font-[Barlow_Condensed]">설정</h2>
       <div className="space-y-3">
-        <label className="text-sm font-medium text-zinc-300">기본 촬영 각도</label>
+        <label className="text-xs font-medium text-stone-400 uppercase tracking-wider font-[Barlow_Condensed]">기본 촬영 각도</label>
         <AngleSelector value={defaultAngle} onChange={setDefaultAngle} />
       </div>
-      <div className="border-t border-zinc-800 pt-4">
-        <p className="text-xs text-zinc-600">풀업 체크 v1.0.0 · 모든 처리는 기기에서 · 데이터 업로드 없음</p>
+      <div className="border-t border-stone-800 pt-4">
+        <p className="text-xs text-stone-600">풀업 체크 v1.0.0 · 모든 처리는 기기에서 · 데이터 업로드 없음</p>
       </div>
     </div>
   );
