@@ -3,11 +3,7 @@ import type {
   Point3D,
   LandmarkSnapshot,
   FormIssue,
-  RepData,
-  SetData,
   Session,
-  CameraAngle,
-  InputMode,
 } from './analysis';
 
 describe('Analysis types', () => {
