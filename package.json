@@ -16,6 +16,7 @@
     "@serwist/window": "^9.5.7",
     "@tanstack/react-router": "^1.168.10",
     "@tanstack/router-devtools": "^1.166.11",
+    "@vercel/analytics": "^2.0.1",
     "@vitejs/plugin-react": "^6.0.1",
     "d3": "^7.9.0",
     "dexie": "^4.4.2",
