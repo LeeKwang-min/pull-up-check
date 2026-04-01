@@ -8,7 +8,7 @@ const navItems = [
 ] as const;
 
 function NavIcon({ name, active }: { name: string; active: boolean }) {
-  const color = active ? '#F59E0B' : '#78716C';
+  const color = active ? '#F59E0B' : '#A8A29E';
   switch (name) {
     case 'home':
       return <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>;
@@ -28,7 +28,7 @@ export function BottomNav() {
   const currentPath = router.location.pathname;
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 bg-stone-950/95 backdrop-blur-lg border-t border-stone-800/50 pb-[env(safe-area-inset-bottom)]">
+    <nav className="fixed bottom-0 left-0 right-0 bg-stone-900/95 backdrop-blur-lg border-t border-stone-700/50 pb-[env(safe-area-inset-bottom)]">
       <div className="flex justify-around items-center h-16">
         {navItems.map((item) => {
           const isActive = item.to === '/' ? currentPath === '/' : currentPath.startsWith(item.to);
@@ -36,7 +36,7 @@ export function BottomNav() {
             <Link
               key={item.to}
               to={item.to}
-              className={`flex flex-col items-center gap-1 text-xs cursor-pointer transition-colors ${isActive ? 'text-amber-500' : 'text-stone-500'}`}
+              className={`flex flex-col items-center gap-1 text-xs cursor-pointer transition-colors ${isActive ? 'text-amber-500' : 'text-stone-400'}`}
             >
               <NavIcon name={item.icon} active={isActive} />
               <span className="font-medium">{item.label}</span>

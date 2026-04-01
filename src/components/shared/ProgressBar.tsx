@@ -7,7 +7,7 @@ export function ProgressBar({ percent, label }: ProgressBarProps) {
   return (
     <div className="w-full">
       {label && (
-        <div className="flex justify-between text-xs text-stone-500 mb-1.5">
+        <div className="flex justify-between text-xs text-stone-400 mb-1.5">
           <span>{label}</span>
           <span className="text-amber-500 font-semibold">{Math.round(percent)}%</span>
         </div>

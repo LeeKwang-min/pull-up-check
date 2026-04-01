@@ -53,7 +53,7 @@ const severityStyles = {
 export function FeedbackList({ sets }: FeedbackListProps) {
   const feedback = generateFeedback(sets);
   if (feedback.length === 0) {
-    return <div className="bg-stone-900 rounded-2xl p-4 border border-amber-500/10 text-center text-stone-500 text-sm">훌륭한 자세! 감지된 문제가 없습니다.</div>;
+    return <div className="bg-stone-800 rounded-2xl p-4 border border-amber-500/10 text-center text-stone-400 text-sm">훌륭한 자세! 감지된 문제가 없습니다.</div>;
   }
   return (
     <div className="space-y-2">

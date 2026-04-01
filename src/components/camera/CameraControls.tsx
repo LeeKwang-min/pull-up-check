@@ -11,7 +11,7 @@ export function CameraControls({ isAnalyzing, onStartStop, onNextSet, onFinish }
       <button
         onClick={onNextSet}
         disabled={!isAnalyzing}
-        className="bg-stone-900 hover:bg-stone-800 disabled:opacity-30 text-stone-400 font-semibold py-2.5 px-5 rounded-xl text-sm transition-colors border border-stone-800 uppercase tracking-wider font-[Barlow_Condensed] cursor-pointer"
+        className="bg-stone-800 hover:bg-stone-700 disabled:opacity-30 text-stone-300 font-semibold py-2.5 px-5 rounded-xl text-sm transition-colors border border-stone-700 uppercase tracking-wider font-[Barlow_Condensed] cursor-pointer"
       >
         다음 세트
       </button>
@@ -27,7 +27,7 @@ export function CameraControls({ isAnalyzing, onStartStop, onNextSet, onFinish }
       </button>
       <button
         onClick={onFinish}
-        className="bg-stone-900 hover:bg-stone-800 text-stone-400 font-semibold py-2.5 px-5 rounded-xl text-sm transition-colors border border-stone-800 uppercase tracking-wider font-[Barlow_Condensed] cursor-pointer"
+        className="bg-stone-800 hover:bg-stone-700 text-stone-300 font-semibold py-2.5 px-5 rounded-xl text-sm transition-colors border border-stone-700 uppercase tracking-wider font-[Barlow_Condensed] cursor-pointer"
       >
         완료
       </button>

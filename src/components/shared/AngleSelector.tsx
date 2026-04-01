@@ -21,7 +21,7 @@ export function AngleSelector({ value, onChange }: AngleSelectorProps) {
           className={`rounded-xl p-3 text-center transition-all cursor-pointer ${
             value === opt.value
               ? 'bg-amber-500/15 text-amber-500 ring-2 ring-amber-500/30 border border-amber-500/20'
-              : 'bg-stone-900 text-stone-400 hover:bg-stone-800 border border-stone-800'
+              : 'bg-stone-800 text-stone-300 hover:bg-stone-700 border border-stone-700'
           }`}
         >
           <div className="font-semibold text-sm">{opt.label}</div>

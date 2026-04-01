@@ -43,8 +43,8 @@ export function BodyDiagram({ sets }: BodyDiagramProps) {
 
     const colorScale = d3.scaleLinear<string>().domain([0, 5, 15]).range(['#22c55e', '#eab308', '#ef4444']).clamp(true);
 
-    svg.append('ellipse').attr('cx', 100).attr('cy', 30).attr('rx', 18).attr('ry', 22).attr('fill', '#292524').attr('stroke', '#44403C');
-    svg.append('rect').attr('x', 65).attr('y', 55).attr('width', 70).attr('height', 85).attr('rx', 8).attr('fill', '#292524').attr('stroke', '#44403C');
+    svg.append('ellipse').attr('cx', 100).attr('cy', 30).attr('rx', 18).attr('ry', 22).attr('fill', '#44403C').attr('stroke', '#57534E');
+    svg.append('rect').attr('x', 65).attr('y', 55).attr('width', 70).attr('height', 85).attr('rx', 8).attr('fill', '#44403C').attr('stroke', '#57534E');
 
     bodyParts.forEach((part) => {
       const asym = part.label.toLowerCase().includes('shoulder') ? shoulderAsym : 0;
@@ -54,12 +54,12 @@ export function BodyDiagram({ sets }: BodyDiagramProps) {
     const legend = svg.append('g').attr('transform', 'translate(10, 165)');
     [{ color: '#22c55e', label: '양호' }, { color: '#eab308', label: '주의' }, { color: '#ef4444', label: '불균형' }].forEach((d, i) => {
       legend.append('rect').attr('x', i * 65).attr('y', 0).attr('width', 10).attr('height', 10).attr('rx', 2).attr('fill', d.color);
-      legend.append('text').attr('x', i * 65 + 14).attr('y', 9).attr('fill', '#78716C').attr('font-size', '10px').text(d.label);
+      legend.append('text').attr('x', i * 65 + 14).attr('y', 9).attr('fill', '#A8A29E').attr('font-size', '10px').text(d.label);
     });
   }, [sets]);
 
   return (
-    <div className="bg-stone-900 rounded-2xl p-4 border border-amber-500/10">
+    <div className="bg-stone-800 rounded-2xl p-4 border border-amber-500/10">
       <h3 className="text-sm font-semibold text-stone-300 mb-2">신체 밸런스</h3>
       <svg ref={svgRef} viewBox="0 0 200 185" className="w-full max-w-[200px] mx-auto" />
     </div>
