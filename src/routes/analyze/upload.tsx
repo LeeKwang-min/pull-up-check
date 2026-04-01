@@ -43,7 +43,7 @@ function UploadAnalysisPage() {
     const client = new PoseWorkerClient(worker);
 
     client.onLandmarks = (data) => updateLandmarks(data);
-    client.onRep = (count, formScore, details) => addRep(formScore, details);
+    client.onRep = (_count, formScore, details) => addRep(formScore, details);
     client.onProgress = (p) => updateProgress(p);
 
     await new Promise<void>((resolve) => {

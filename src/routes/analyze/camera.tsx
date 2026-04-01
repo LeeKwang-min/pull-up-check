@@ -50,7 +50,7 @@ function CameraAnalysisPage() {
 
       client.onReady = () => startAnalysis();
       client.onLandmarks = (data) => updateLandmarks(data);
-      client.onRep = (count, formScore, details) => addRep(formScore, details);
+      client.onRep = (_count, formScore, details) => addRep(formScore, details);
       client.onFormAlert = (issue) => addAlert(issue);
 
       client.init({

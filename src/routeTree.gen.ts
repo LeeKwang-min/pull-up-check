@@ -9,38 +9,134 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as SettingsRouteImport } from './routes/settings'
+import { Route as HistoryRouteImport } from './routes/history'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AnalyzeIndexRouteImport } from './routes/analyze/index'
+import { Route as ResultIdRouteImport } from './routes/result/$id'
+import { Route as AnalyzeUploadRouteImport } from './routes/analyze/upload'
+import { Route as AnalyzeCameraRouteImport } from './routes/analyze/camera'
 
+const SettingsRoute = SettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const HistoryRoute = HistoryRouteImport.update({
+  id: '/history',
+  path: '/history',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AnalyzeIndexRoute = AnalyzeIndexRouteImport.update({
+  id: '/analyze/',
+  path: '/analyze/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ResultIdRoute = ResultIdRouteImport.update({
+  id: '/result/$id',
+  path: '/result/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AnalyzeUploadRoute = AnalyzeUploadRouteImport.update({
+  id: '/analyze/upload',
+  path: '/analyze/upload',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AnalyzeCameraRoute = AnalyzeCameraRouteImport.update({
+  id: '/analyze/camera',
+  path: '/analyze/camera',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/history': typeof HistoryRoute
+  '/settings': typeof SettingsRoute
+  '/analyze/camera': typeof AnalyzeCameraRoute
+  '/analyze/upload': typeof AnalyzeUploadRoute
+  '/result/$id': typeof ResultIdRoute
+  '/analyze/': typeof AnalyzeIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/history': typeof HistoryRoute
+  '/settings': typeof SettingsRoute
+  '/analyze/camera': typeof AnalyzeCameraRoute
+  '/analyze/upload': typeof AnalyzeUploadRoute
+  '/result/$id': typeof ResultIdRoute
+  '/analyze': typeof AnalyzeIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/history': typeof HistoryRoute
+  '/settings': typeof SettingsRoute
+  '/analyze/camera': typeof AnalyzeCameraRoute
+  '/analyze/upload': typeof AnalyzeUploadRoute
+  '/result/$id': typeof ResultIdRoute
+  '/analyze/': typeof AnalyzeIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths:
+    | '/'
+    | '/history'
+    | '/settings'
+    | '/analyze/camera'
+    | '/analyze/upload'
+    | '/result/$id'
+    | '/analyze/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
+  to:
+    | '/'
+    | '/history'
+    | '/settings'
+    | '/analyze/camera'
+    | '/analyze/upload'
+    | '/result/$id'
+    | '/analyze'
+  id:
+    | '__root__'
+    | '/'
+    | '/history'
+    | '/settings'
+    | '/analyze/camera'
+    | '/analyze/upload'
+    | '/result/$id'
+    | '/analyze/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  HistoryRoute: typeof HistoryRoute
+  SettingsRoute: typeof SettingsRoute
+  AnalyzeCameraRoute: typeof AnalyzeCameraRoute
+  AnalyzeUploadRoute: typeof AnalyzeUploadRoute
+  ResultIdRoute: typeof ResultIdRoute
+  AnalyzeIndexRoute: typeof AnalyzeIndexRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/settings': {
+      id: '/settings'
+      path: '/settings'
+      fullPath: '/settings'
+      preLoaderRoute: typeof SettingsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/history': {
+      id: '/history'
+      path: '/history'
+      fullPath: '/history'
+      preLoaderRoute: typeof HistoryRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -48,11 +144,45 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/analyze/': {
+      id: '/analyze/'
+      path: '/analyze'
+      fullPath: '/analyze/'
+      preLoaderRoute: typeof AnalyzeIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/result/$id': {
+      id: '/result/$id'
+      path: '/result/$id'
+      fullPath: '/result/$id'
+      preLoaderRoute: typeof ResultIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/analyze/upload': {
+      id: '/analyze/upload'
+      path: '/analyze/upload'
+      fullPath: '/analyze/upload'
+      preLoaderRoute: typeof AnalyzeUploadRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/analyze/camera': {
+      id: '/analyze/camera'
+      path: '/analyze/camera'
+      fullPath: '/analyze/camera'
+      preLoaderRoute: typeof AnalyzeCameraRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  HistoryRoute: HistoryRoute,
+  SettingsRoute: SettingsRoute,
+  AnalyzeCameraRoute: AnalyzeCameraRoute,
+  AnalyzeUploadRoute: AnalyzeUploadRoute,
+  ResultIdRoute: ResultIdRoute,
+  AnalyzeIndexRoute: AnalyzeIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
