@@ -106,10 +106,18 @@ export class PoseAnalyzer {
       landmarks.elbowRight,
       landmarks.wristRight,
     );
-    const avgAngle = (leftAngle + rightAngle) / 2;
 
-    const repCompleted = this.repCounter.update(avgAngle, ts);
+    const prevPhase = this.repCounter.phase;
+    const repCompleted = this.repCounter.update(leftAngle, rightAngle, ts);
     const issues = this.formAnalyzer.analyze(landmarks);
+
+    // 디버그 로깅
+    if (repCompleted || prevPhase !== this.repCounter.phase) {
+      const avg = (leftAngle + rightAngle) / 2;
+      console.log(
+        `[PoseDebug] t=${(ts / 1000).toFixed(1)}s | avg=${avg.toFixed(1)}° | L=${leftAngle.toFixed(1)}° R=${rightAngle.toFixed(1)}° | ${prevPhase}→${this.repCounter.phase}${repCompleted ? ` | REP #${this.repCounter.count}` : ''}`,
+      );
+    }
 
     for (const issue of issues) {
       if (issue.severity === 'high' || issue.severity === 'medium') {

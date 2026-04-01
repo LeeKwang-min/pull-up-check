@@ -83,9 +83,7 @@ function processFrame(imageData: ImageBitmap, timestamp: number): void {
     landmarks.elbowRight,
     landmarks.wristRight,
   );
-  const avgAngle = (leftAngle + rightAngle) / 2;
-
-  const repCompleted = repCounter.update(avgAngle, timestamp);
+  const repCompleted = repCounter.update(leftAngle, rightAngle, timestamp);
 
   const issues = formAnalyzer.analyze(landmarks);
 
