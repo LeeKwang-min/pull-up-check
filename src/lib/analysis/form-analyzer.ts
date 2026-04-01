@@ -14,7 +14,7 @@ export class FormAnalyzer {
   private shoulderBiasSamples: number[] = [];
   private elbowBiasSamples: number[] = [];
   private hipBiasSamples: number[] = [];
-  // 다리 벌어짐 (어깨 너비 대비 %)
+  // 다리 벌어짐 (골반 너비 대비 %)
   private kneeGapSamples: number[] = [];
   // 팔꿈치 너비 비대칭 (절대값 + 부호)
   private elbowWidthSamples: number[] = [];
@@ -38,10 +38,10 @@ export class FormAnalyzer {
     this.elbowBiasSamples.push(elbowAsym);
     this.hipBiasSamples.push(hipAsym);
 
-    // 다리 벌어짐 (어깨 너비 대비 %)
-    const shoulderWidth = Math.abs(landmarks.shoulderLeft.x - landmarks.shoulderRight.x);
+    // 다리 벌어짐 (골반 너비 대비 %)
+    const hipWidth = Math.abs(landmarks.hipLeft.x - landmarks.hipRight.x);
     const kneeGapX = Math.abs(landmarks.kneeLeft.x - landmarks.kneeRight.x);
-    const kneeGapRatio = shoulderWidth > 0.01 ? (kneeGapX / shoulderWidth) * 100 : 0;
+    const kneeGapRatio = hipWidth > 0.01 ? (kneeGapX / hipWidth) * 100 : 0;
     this.kneeGapSamples.push(kneeGapRatio);
 
     // 팔꿈치 너비 대칭 (등 중심 기준 좌우 간격 차이)
@@ -79,8 +79,8 @@ export class FormAnalyzer {
     const avgElbow = average(this.elbowAsymSamples);
     const avgHip = average(this.hipAsymSamples);
     const avgElbowWidth = average(this.elbowWidthSamples);
-    // 다리 간격은 스케일이 다르므로 /10으로 정규화 (30% → 3점)
-    const avgKneeGap = average(this.kneeGapSamples) / 10;
+    // 골반 대비 초과분만 감점 (110% → 1점, 100% 이하 → 0점)
+    const avgKneeGap = Math.max(0, average(this.kneeGapSamples) - 100) / 10;
 
     // 어깨 20%, 팔꿈치 높이 15%, 골반 10%, 팔꿈치 너비 25%, 다리 밀착 30%
     const weightedAsym =
