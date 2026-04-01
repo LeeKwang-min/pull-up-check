@@ -283,16 +283,18 @@ function UploadAnalysisPage() {
 
               {session && (
                 <>
-                  <div ref={reportRef} className="space-y-4">
+                  <div className="space-y-4">
                     <h3 className="text-lg font-bold uppercase tracking-wider font-[Barlow_Condensed]">분석 리포트</h3>
                     <div className="grid grid-cols-2 gap-3">
                       <ScoreCard label="종합 점수" score={session.overallScore} />
                       <ScoreCard label="밸런스 점수" score={session.balanceScore} color="#10b981" />
                     </div>
-                    <SetChart sets={session.sets} />
-                    {(session.angle === 'front' || session.angle === 'back') && (
-                      <BodyDiagram sets={session.sets} asymmetryDetails={session.asymmetryDetails} />
-                    )}
+                    <div ref={reportRef} className="space-y-4">
+                      <SetChart sets={session.sets} />
+                      {(session.angle === 'front' || session.angle === 'back') && (
+                        <BodyDiagram sets={session.sets} asymmetryDetails={session.asymmetryDetails} />
+                      )}
+                    </div>
                     <FeedbackList sets={session.sets} />
                   </div>
                   <ReportExport targetRef={reportRef} />

@@ -68,8 +68,8 @@ export function BodyDiagram({ sets, asymmetryDetails }: BodyDiagramProps) {
     const bodyParts: BodyPart[] = [
       { id: 'shoulder-l', x: 55, y: 50, width: 28, height: 18, asymValue: d.shoulder },
       { id: 'shoulder-r', x: 117, y: 50, width: 28, height: 18, asymValue: d.shoulder },
-      { id: 'arm-l', x: 40, y: 72, width: 18, height: 45, asymValue: d.elbow },
-      { id: 'arm-r', x: 142, y: 72, width: 18, height: 45, asymValue: d.elbow },
+      { id: 'arm-l', x: 40, y: 72, width: 18, height: 45, asymValue: Math.max(d.elbow, d.elbowWidth) },
+      { id: 'arm-r', x: 142, y: 72, width: 18, height: 45, asymValue: Math.max(d.elbow, d.elbowWidth) },
       { id: 'back-l', x: 72, y: 72, width: 28, height: 45, asymValue: d.hip },
       { id: 'back-r', x: 100, y: 72, width: 28, height: 45, asymValue: d.hip },
       { id: 'leg-l', x: 74, y: 122, width: 18, height: 46, asymValue: kneeGapScaled },
@@ -116,7 +116,7 @@ export function BodyDiagram({ sets, asymmetryDetails }: BodyDiagramProps) {
       bias: d.elbowWidthBias, biasType: 'width' as const,
     },
     {
-      label: '다리 반동', weight: '30%', asym: d.kneeGap, deduction: (d.kneeGap / 10) * 3,
+      label: '다리 반동', weight: '30%', asym: d.kneeGap, deduction: (Math.max(0, d.kneeGap - 140) / 10) * 3,
       bias: 0, biasType: 'gap' as const,
     },
   ];
@@ -133,7 +133,7 @@ export function BodyDiagram({ sets, asymmetryDetails }: BodyDiagramProps) {
           <h4 className="text-xs font-semibold text-stone-400 uppercase tracking-wider">감점 내역</h4>
           {items.map((item) => {
             const status = getStatus(
-              item.biasType === 'gap' ? item.asym / 10 : item.asym,
+              item.biasType === 'gap' ? Math.max(0, item.asym - 140) / 10 : item.asym,
             );
 
             return (
@@ -180,7 +180,7 @@ export function BodyDiagram({ sets, asymmetryDetails }: BodyDiagramProps) {
                     </span>
                   </div>
                 )}
-                {item.biasType === 'gap' && item.asym > 40 && (
+                {item.biasType === 'gap' && item.asym > 140 && (
                   <div className="flex items-center gap-1.5 ml-4 text-[10px]">
                     <span className="font-mono font-bold text-orange-400">!</span>
                     <span className="text-stone-500">
