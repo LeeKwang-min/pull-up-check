@@ -98,7 +98,7 @@ function CameraAnalysisPage() {
 
       const analyzer = new PoseAnalyzer(angle, {
         onLandmarks: (data) => updateLandmarks(data),
-        onRep: (_count, formScore, details) => addRep(formScore, details),
+        onRep: (result) => addRep(result.formScore, result.details, result.tempo, result.rom),
         onFormAlert: (issue) => addAlert(issue),
         onError: (msg) => {
           setError(msg);
@@ -123,6 +123,9 @@ function CameraAnalysisPage() {
       nextSet();
     }
     cancelAnimationFrame(animationRef.current);
+
+    // 밸런스 점수 계산 (destroy 전에)
+    const balanceScore = analyzerRef.current?.getBalanceScore() ?? 0;
     analyzerRef.current?.destroy();
     analyzerRef.current = null;
     stopAnalysis();
@@ -141,7 +144,7 @@ function CameraAnalysisPage() {
         allSets.length > 0
           ? allSets.reduce((s, set) => s + set.averageFormScore, 0) / allSets.length
           : 0,
-      balanceScore: 0,
+      balanceScore,
       totalReps: allSets.reduce((s, set) => s + set.reps.length, 0),
       duration: 0,
     });

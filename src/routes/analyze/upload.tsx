@@ -26,8 +26,9 @@ function UploadAnalysisPage() {
   const videoRef = useRef<HTMLVideoElement>(null);
   const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
 
-  const { landmarks, progress, updateLandmarks, updateProgress, addRep, addAlert, reset } =
+  const { landmarks, progress, updateLandmarks, updateProgress, addRep, addAlert, nextSet, reset } =
     useAnalysisStore();
+  const analyzerRef = useRef<PoseAnalyzer | null>(null);
 
   const handleFileSelected = useCallback((file: File) => {
     const url = URL.createObjectURL(file);
@@ -44,7 +45,7 @@ function UploadAnalysisPage() {
 
     const analyzer = new PoseAnalyzer(angle, {
       onLandmarks: (data) => updateLandmarks(data),
-      onRep: (_count, formScore, details) => addRep(formScore, details),
+      onRep: (result) => addRep(result.formScore, result.details, result.tempo, result.rom),
       onFormAlert: (issue) => addAlert(issue),
       onError: (msg) => {
         setError(msg);
@@ -54,6 +55,7 @@ function UploadAnalysisPage() {
     });
 
     await analyzer.init();
+    analyzerRef.current = analyzer;
 
     if (error) return;
 
@@ -81,33 +83,33 @@ function UploadAnalysisPage() {
     }
 
     updateProgress(100);
+
+    // 밸런스 점수 계산 (analyzer destroy 전에)
+    const balanceScore = analyzer.getBalanceScore();
     analyzer.destroy();
+    analyzerRef.current = null;
+
+    // 현재 렙을 세트로 마감
+    nextSet();
 
     // 세션 저장
     const sessionId = crypto.randomUUID();
     const { saveSession } = await import('../../lib/db/sessions');
     const store = useAnalysisStore.getState();
-
-    const setData = {
-      setNumber: 1,
-      reps: store.currentSetReps,
-      averageFormScore:
-        store.currentSetReps.length > 0
-          ? store.currentSetReps.reduce((s, r) => s + r.formScore, 0) /
-            store.currentSetReps.length
-          : 0,
-      formBreakdownRep: null,
-    };
+    const allSets = store.sets;
 
     await saveSession({
       id: sessionId,
       date: new Date(),
       angle,
       inputMode: 'upload',
-      sets: [setData],
-      overallScore: setData.averageFormScore,
-      balanceScore: 0,
-      totalReps: store.currentSetReps.length,
+      sets: allSets,
+      overallScore:
+        allSets.length > 0
+          ? allSets.reduce((s, set) => s + set.averageFormScore, 0) / allSets.length
+          : 0,
+      balanceScore,
+      totalReps: allSets.reduce((s, set) => s + set.reps.length, 0),
       duration: Math.round(duration),
     });
 

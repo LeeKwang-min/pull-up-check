@@ -65,6 +65,30 @@ describe('FormAnalyzer — side', () => {
   });
 });
 
+describe('FormAnalyzer — balance score', () => {
+  it('should return 100 for perfectly symmetric form', () => {
+    const analyzer = new FormAnalyzer('front');
+    analyzer.analyze(symmetricLandmarks());
+    analyzer.analyze(symmetricLandmarks());
+    analyzer.analyze(symmetricLandmarks());
+    expect(analyzer.computeBalanceScore()).toBe(100);
+  });
+
+  it('should return lower score for asymmetric form', () => {
+    const analyzer = new FormAnalyzer('back');
+    analyzer.analyze(asymmetricLandmarks());
+    analyzer.analyze(asymmetricLandmarks());
+    const score = analyzer.computeBalanceScore();
+    expect(score).toBeLessThan(100);
+    expect(score).toBeGreaterThan(0);
+  });
+
+  it('should return 100 when no frames analyzed', () => {
+    const analyzer = new FormAnalyzer('front');
+    expect(analyzer.computeBalanceScore()).toBe(100);
+  });
+});
+
 describe('FormAnalyzer — shared', () => {
   it('should compute form score from issues', () => {
     const analyzer = new FormAnalyzer('front');

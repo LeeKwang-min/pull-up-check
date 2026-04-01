@@ -7,10 +7,18 @@ import { FormAnalyzer } from './analysis/form-analyzer';
 const MODEL_URL =
   'https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_lite/float16/1/pose_landmarker_lite.task';
 
+export interface RepResult {
+  count: number;
+  formScore: number;
+  tempo: number;
+  rom: number;
+  details: FormIssue[];
+}
+
 export interface PoseAnalyzerCallbacks {
   onReady?: () => void;
   onLandmarks?: (data: LandmarkSnapshot, timestamp: number) => void;
-  onRep?: (count: number, formScore: number, details: FormIssue[]) => void;
+  onRep?: (result: RepResult) => void;
   onFormAlert?: (issue: FormIssue) => void;
   onError?: (message: string) => void;
 }
@@ -111,12 +119,22 @@ export class PoseAnalyzer {
 
     if (repCompleted) {
       const formScore = this.formAnalyzer.computeFormScore(issues);
-      this.callbacks.onRep?.(this.repCounter.count, formScore, issues);
+      this.callbacks.onRep?.({
+        count: this.repCounter.count,
+        formScore,
+        tempo: this.repCounter.lastTempo,
+        rom: this.repCounter.lastRom,
+        details: issues,
+      });
     }
   }
 
   resetSet(): void {
     this.repCounter.reset();
+  }
+
+  getBalanceScore(): number {
+    return this.formAnalyzer.computeBalanceScore();
   }
 
   destroy(): void {
