@@ -4,7 +4,7 @@ import { VideoDropzone } from '../../components/upload/VideoDropzone';
 import { ProgressBar } from '../../components/shared/ProgressBar';
 import { LandmarkOverlay } from '../../components/analysis/LandmarkOverlay';
 import { useAnalysisStore } from '../../stores/analysis-store';
-import { PoseWorkerClient } from '../../lib/worker-client';
+import { PoseAnalyzer } from '../../lib/pose-analyzer';
 import type { CameraAngle } from '../../types/analysis';
 
 type SearchParams = { angle: CameraAngle };
@@ -21,42 +21,48 @@ function UploadAnalysisPage() {
   const navigate = useNavigate();
   const [videoUrl, setVideoUrl] = useState<string | null>(null);
   const [analyzing, setAnalyzing] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
 
-  const { landmarks, progress, updateLandmarks, updateProgress, addRep, reset } = useAnalysisStore();
+  const { landmarks, progress, updateLandmarks, updateProgress, addRep, addAlert, reset } =
+    useAnalysisStore();
 
   const handleFileSelected = useCallback((file: File) => {
     const url = URL.createObjectURL(file);
     setVideoUrl(url);
+    setError(null);
   }, []);
 
   const handleAnalyze = useCallback(async () => {
     const video = videoRef.current;
     if (!video) return;
 
-    setAnalyzing(true);
-    const worker = new Worker(
-      new URL('../../workers/pose-worker.ts', import.meta.url),
-      { type: 'module' },
-    );
-    const client = new PoseWorkerClient(worker);
+    setLoading(true);
+    setError(null);
 
-    client.onLandmarks = (data) => updateLandmarks(data);
-    client.onRep = (_count, formScore, details) => addRep(formScore, details);
-    client.onProgress = (p) => updateProgress(p);
-
-    await new Promise<void>((resolve) => {
-      client.onReady = resolve;
-      client.init({
-        angle,
-        modelPath: 'https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_lite/float16/1/pose_landmarker_lite.task',
-      });
+    const analyzer = new PoseAnalyzer(angle, {
+      onLandmarks: (data) => updateLandmarks(data),
+      onRep: (_count, formScore, details) => addRep(formScore, details),
+      onFormAlert: (issue) => addAlert(issue),
+      onError: (msg) => {
+        setError(msg);
+        setLoading(false);
+        setAnalyzing(false);
+      },
     });
 
+    await analyzer.init();
+
+    if (error) return;
+
+    setLoading(false);
+    setAnalyzing(true);
+
     const duration = video.duration;
-    const fps = 15;
-    const frameInterval = 1000 / fps;
+    const fps = 10;
+    const frameStep = 1 / fps;
     let currentTime = 0;
 
     while (currentTime < duration) {
@@ -65,15 +71,19 @@ function UploadAnalysisPage() {
         video.onseeked = () => resolve();
       });
 
-      const bitmap = await createImageBitmap(video);
-      client.sendFrame(bitmap, currentTime * 1000);
+      analyzer.processFrame(video, currentTime * 1000);
       updateProgress((currentTime / duration) * 100);
-      currentTime += frameInterval / 1000;
+
+      // UI 업데이트를 위한 yield
+      await new Promise((r) => setTimeout(r, 0));
+
+      currentTime += frameStep;
     }
 
     updateProgress(100);
-    client.stop();
+    analyzer.destroy();
 
+    // 세션 저장
     const sessionId = crypto.randomUUID();
     const { saveSession } = await import('../../lib/db/sessions');
     const store = useAnalysisStore.getState();
@@ -83,7 +93,8 @@ function UploadAnalysisPage() {
       reps: store.currentSetReps,
       averageFormScore:
         store.currentSetReps.length > 0
-          ? store.currentSetReps.reduce((s, r) => s + r.formScore, 0) / store.currentSetReps.length
+          ? store.currentSetReps.reduce((s, r) => s + r.formScore, 0) /
+            store.currentSetReps.length
           : 0,
       formBreakdownRep: null,
     };
@@ -102,7 +113,7 @@ function UploadAnalysisPage() {
 
     reset();
     navigate({ to: '/result/$id', params: { id: sessionId } });
-  }, [angle, updateLandmarks, addRep, updateProgress, reset, navigate]);
+  }, [angle, error, updateLandmarks, addRep, addAlert, updateProgress, reset, navigate]);
 
   return (
     <div className="py-4 space-y-4">
@@ -110,26 +121,43 @@ function UploadAnalysisPage() {
         <VideoDropzone onFileSelected={handleFileSelected} />
       ) : (
         <>
-          <div className="relative bg-black rounded-xl overflow-hidden">
+          <div className="relative bg-black rounded-2xl overflow-hidden">
             <video
               ref={videoRef}
               src={videoUrl}
               playsInline
               muted
+              preload="auto"
               onLoadedMetadata={(e) => {
                 const v = e.currentTarget;
                 setDimensions({ width: v.videoWidth, height: v.videoHeight });
               }}
               className="w-full"
             />
-            <LandmarkOverlay landmarks={landmarks} width={dimensions.width} height={dimensions.height} />
+            <LandmarkOverlay
+              landmarks={landmarks}
+              width={dimensions.width}
+              height={dimensions.height}
+            />
           </div>
-          {analyzing ? (
+
+          {error && (
+            <div className="bg-red-900/20 border border-red-500/20 rounded-xl p-3 text-sm text-red-400">
+              {error}
+            </div>
+          )}
+
+          {loading ? (
+            <div className="text-center py-4">
+              <div className="text-sm text-stone-400">MediaPipe 모델 로딩 중...</div>
+              <div className="text-xs text-stone-500 mt-1">첫 실행 시 모델 다운로드가 필요합니다</div>
+            </div>
+          ) : analyzing ? (
             <ProgressBar percent={progress} label="영상 분석 중..." />
           ) : (
             <button
               onClick={handleAnalyze}
-              className="w-full bg-blue-600 hover:bg-blue-500 text-white font-semibold py-3 rounded-xl transition-colors"
+              className="w-full bg-gradient-to-r from-amber-500 to-amber-600 text-black font-bold py-4 rounded-2xl transition-all hover:shadow-lg hover:shadow-amber-500/20 uppercase tracking-widest text-sm font-[Barlow_Condensed] cursor-pointer"
             >
               분석 시작
             </button>

@@ -1,10 +1,10 @@
 import { createFileRoute, useNavigate } from '@tanstack/react-router';
-import { useCallback, useRef } from 'react';
-import { CameraView } from '../../components/camera/CameraView';
+import { useCallback, useRef, useEffect, useState } from 'react';
 import { CameraControls } from '../../components/camera/CameraControls';
 import { LiveStats } from '../../components/analysis/LiveStats';
+import { LandmarkOverlay } from '../../components/analysis/LandmarkOverlay';
 import { useAnalysisStore } from '../../stores/analysis-store';
-import { PoseWorkerClient } from '../../lib/worker-client';
+import { PoseAnalyzer } from '../../lib/pose-analyzer';
 import type { CameraAngle } from '../../types/analysis';
 
 type SearchParams = { angle: CameraAngle };
@@ -19,7 +19,12 @@ export const Route = createFileRoute('/analyze/camera')({
 function CameraAnalysisPage() {
   const { angle } = Route.useSearch();
   const navigate = useNavigate();
-  const workerRef = useRef<PoseWorkerClient | null>(null);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const analyzerRef = useRef<PoseAnalyzer | null>(null);
+  const animationRef = useRef<number>(0);
+  const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const {
     isAnalyzing,
@@ -36,50 +41,91 @@ function CameraAnalysisPage() {
     reset,
   } = useAnalysisStore();
 
-  const handleStartStop = useCallback(() => {
+  // 카메라 시작
+  useEffect(() => {
+    let stream: MediaStream | null = null;
+
+    async function startCamera() {
+      try {
+        stream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: 'environment', width: 640, height: 480 },
+        });
+        if (videoRef.current) {
+          videoRef.current.srcObject = stream;
+        }
+      } catch (err) {
+        setError('카메라 접근이 거부되었습니다. 권한을 허용해 주세요.');
+      }
+    }
+
+    startCamera();
+
+    return () => {
+      stream?.getTracks().forEach((t) => t.stop());
+      cancelAnimationFrame(animationRef.current);
+      analyzerRef.current?.destroy();
+    };
+  }, []);
+
+  // 분석 루프
+  useEffect(() => {
+    if (!isAnalyzing) {
+      cancelAnimationFrame(animationRef.current);
+      return;
+    }
+
+    function loop() {
+      const video = videoRef.current;
+      if (video && video.readyState >= 2 && analyzerRef.current) {
+        analyzerRef.current.processFrame(video, performance.now());
+      }
+      animationRef.current = requestAnimationFrame(loop);
+    }
+
+    animationRef.current = requestAnimationFrame(loop);
+    return () => cancelAnimationFrame(animationRef.current);
+  }, [isAnalyzing]);
+
+  const handleStartStop = useCallback(async () => {
     if (isAnalyzing) {
-      workerRef.current?.stop();
-      workerRef.current = null;
+      cancelAnimationFrame(animationRef.current);
+      analyzerRef.current?.destroy();
+      analyzerRef.current = null;
       stopAnalysis();
     } else {
-      const worker = new Worker(
-        new URL('../../workers/pose-worker.ts', import.meta.url),
-        { type: 'module' },
-      );
-      const client = new PoseWorkerClient(worker);
+      setLoading(true);
+      setError(null);
 
-      client.onReady = () => startAnalysis();
-      client.onLandmarks = (data) => updateLandmarks(data);
-      client.onRep = (_count, formScore, details) => addRep(formScore, details);
-      client.onFormAlert = (issue) => addAlert(issue);
-
-      client.init({
-        angle,
-        modelPath: 'https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_lite/float16/1/pose_landmarker_lite.task',
+      const analyzer = new PoseAnalyzer(angle, {
+        onLandmarks: (data) => updateLandmarks(data),
+        onRep: (_count, formScore, details) => addRep(formScore, details),
+        onFormAlert: (issue) => addAlert(issue),
+        onError: (msg) => {
+          setError(msg);
+          setLoading(false);
+        },
       });
 
-      workerRef.current = client;
+      await analyzer.init();
+      analyzerRef.current = analyzer;
+      setLoading(false);
+      startAnalysis();
     }
   }, [isAnalyzing, angle, startAnalysis, stopAnalysis, addRep, addAlert, updateLandmarks]);
 
-  const handleFrame = useCallback(
-    (bitmap: ImageBitmap, timestamp: number) => {
-      workerRef.current?.sendFrame(bitmap, timestamp);
-    },
-    [],
-  );
-
   const handleNextSet = useCallback(() => {
     nextSet();
-    workerRef.current?.startSet();
+    analyzerRef.current?.resetSet();
   }, [nextSet]);
 
   const handleFinish = useCallback(async () => {
     if (repCount > 0) {
       nextSet();
     }
-    workerRef.current?.stop();
-    workerRef.current = null;
+    cancelAnimationFrame(animationRef.current);
+    analyzerRef.current?.destroy();
+    analyzerRef.current = null;
+    stopAnalysis();
 
     const sessionId = crypto.randomUUID();
     const { saveSession } = await import('../../lib/db/sessions');
@@ -102,18 +148,50 @@ function CameraAnalysisPage() {
 
     reset();
     navigate({ to: '/result/$id', params: { id: sessionId } });
-  }, [angle, repCount, nextSet, reset, navigate]);
+  }, [angle, repCount, nextSet, stopAnalysis, reset, navigate]);
 
   return (
     <div className="py-4 space-y-4">
-      <CameraView onFrame={handleFrame} isActive={isAnalyzing} landmarks={landmarks} />
+      <div className="relative bg-black rounded-2xl overflow-hidden">
+        <video
+          ref={videoRef}
+          autoPlay
+          playsInline
+          muted
+          onLoadedMetadata={(e) => {
+            const v = e.currentTarget;
+            setDimensions({ width: v.videoWidth, height: v.videoHeight });
+          }}
+          className="w-full"
+        />
+        <LandmarkOverlay
+          landmarks={landmarks}
+          width={dimensions.width}
+          height={dimensions.height}
+        />
+      </div>
+
+      {error && (
+        <div className="bg-red-900/20 border border-red-500/20 rounded-xl p-3 text-sm text-red-400">
+          {error}
+        </div>
+      )}
+
       <LiveStats repCount={repCount} currentSet={currentSet} alerts={alerts} />
-      <CameraControls
-        isAnalyzing={isAnalyzing}
-        onStartStop={handleStartStop}
-        onNextSet={handleNextSet}
-        onFinish={handleFinish}
-      />
+
+      {loading ? (
+        <div className="text-center py-4">
+          <div className="text-sm text-stone-300">MediaPipe 모델 로딩 중...</div>
+          <div className="text-xs text-stone-400 mt-1">첫 실행 시 모델 다운로드가 필요합니다</div>
+        </div>
+      ) : (
+        <CameraControls
+          isAnalyzing={isAnalyzing}
+          onStartStop={handleStartStop}
+          onNextSet={handleNextSet}
+          onFinish={handleFinish}
+        />
+      )}
     </div>
   );
 }
