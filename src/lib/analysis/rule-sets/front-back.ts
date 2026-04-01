@@ -5,7 +5,7 @@ import { calculateAsymmetry } from '../angle-calculator';
 const SHOULDER_THRESHOLD = 3;
 const ELBOW_THRESHOLD = 4;
 const HIP_THRESHOLD = 3;
-const KNEE_GAP_THRESHOLD = 110;    // 골반 너비 대비 110% 이상 벌어지면 감지 (약간의 여유)
+const KNEE_GAP_THRESHOLD = 140;    // 골반 너비 대비 140% 이상 벌어지면 감지 (11자 자연 늘어짐 허용)
 const ELBOW_WIDTH_THRESHOLD = 10;  // 팔꿈치 너비 좌우 10% 이상 차이
 
 function classifySeverity(value: number, low: number, medium: number, high: number): Severity {
@@ -79,7 +79,8 @@ export function analyzeFrontBack(landmarks: LandmarkSnapshot): FormIssue[] {
     });
   }
 
-  // 다리 벌어짐 체크 (골반 너비 기준 — 골반보다 넓으면 불균형)
+  // 다리 반동 체크 (골반 너비 기준 — 골반보다 크게 벌어지면 반동 사용)
+  // 자연스럽게 11자로 늘어진 다리는 허용, 골반보다 넓게 벌린 경우만 감지
   const hipWidth = Math.abs(landmarks.hipLeft.x - landmarks.hipRight.x);
   const kneeGapX = Math.abs(landmarks.kneeLeft.x - landmarks.kneeRight.x);
   const kneeGapRatio = hipWidth > 0.01 ? (kneeGapX / hipWidth) * 100 : 0;
@@ -87,8 +88,8 @@ export function analyzeFrontBack(landmarks: LandmarkSnapshot): FormIssue[] {
   if (kneeGapRatio > KNEE_GAP_THRESHOLD) {
     issues.push({
       type: 'leg_spread',
-      severity: classifySeverity(kneeGapRatio, 110, 140, 170),
-      detail: `다리가 골반 너비보다 ${(kneeGapRatio - 100).toFixed(0)}% 더 벌어져 있습니다`,
+      severity: classifySeverity(kneeGapRatio, 140, 170, 200),
+      detail: `다리가 골반 너비보다 ${(kneeGapRatio - 100).toFixed(0)}% 벌어져 반동이 감지됩니다`,
       values: { kneeGapRatio },
     });
   }

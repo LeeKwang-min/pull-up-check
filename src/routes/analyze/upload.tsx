@@ -1,11 +1,17 @@
-import { createFileRoute, useNavigate } from '@tanstack/react-router';
+import { createFileRoute } from '@tanstack/react-router';
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { VideoDropzone } from '../../components/upload/VideoDropzone';
 import { ProgressBar } from '../../components/shared/ProgressBar';
 import { LandmarkOverlay } from '../../components/analysis/LandmarkOverlay';
+import { ScoreCard } from '../../components/report/ScoreCard';
+import { SetChart } from '../../components/report/SetChart';
+import { BodyDiagram } from '../../components/report/BodyDiagram';
+import { FeedbackList } from '../../components/report/FeedbackList';
+import { ReportExport } from '../../components/report/ReportExport';
 import { useAnalysisStore } from '../../stores/analysis-store';
 import { PoseAnalyzer } from '../../lib/pose-analyzer';
-import type { CameraAngle, LandmarkSnapshot } from '../../types/analysis';
+import { getSession } from '../../lib/db/sessions';
+import type { CameraAngle, LandmarkSnapshot, Session } from '../../types/analysis';
 
 type SearchParams = { angle: CameraAngle };
 
@@ -23,14 +29,15 @@ interface FrameData {
 
 function UploadAnalysisPage() {
   const { angle } = Route.useSearch();
-  const navigate = useNavigate();
   const [videoUrl, setVideoUrl] = useState<string | null>(null);
   const [analyzing, setAnalyzing] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [analysisComplete, setAnalysisComplete] = useState(false);
   const [sessionId, setSessionId] = useState<string | null>(null);
+  const [session, setSession] = useState<Session | null>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
+  const reportRef = useRef<HTMLDivElement>(null);
   const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
 
   // 프레임별 랜드마크 저장 (비디오 재생 시 스켈레톤 동기화용)
@@ -143,6 +150,16 @@ function UploadAnalysisPage() {
     video.currentTime = 0;
   }, [angle, error, updateLandmarks, addRep, addAlert, updateProgress, nextSet]);
 
+  // 분석 완료 후 세션 로드 & 스토어 정리
+  useEffect(() => {
+    if (sessionId) {
+      getSession(sessionId).then((s) => {
+        setSession(s ?? null);
+        reset();
+      });
+    }
+  }, [sessionId, reset]);
+
   // 비디오 재생 시 스켈레톤 동기화
   useEffect(() => {
     if (!analysisComplete) return;
@@ -199,13 +216,6 @@ function UploadAnalysisPage() {
     };
   }, [analysisComplete]);
 
-  const handleViewResults = useCallback(() => {
-    reset();
-    if (sessionId) {
-      navigate({ to: '/result/$id', params: { id: sessionId } });
-    }
-  }, [sessionId, reset, navigate]);
-
   const handlePlaybackRate = useCallback((rate: number) => {
     setPlaybackRate(rate);
     if (videoRef.current) {
@@ -250,7 +260,7 @@ function UploadAnalysisPage() {
           )}
 
           {analysisComplete ? (
-            <div className="space-y-3">
+            <div className="space-y-4">
               <p className="text-center text-sm text-stone-400">
                 영상을 재생하여 스켈레톤 분석을 확인하세요
               </p>
@@ -270,12 +280,24 @@ function UploadAnalysisPage() {
                   </button>
                 ))}
               </div>
-              <button
-                onClick={handleViewResults}
-                className="w-full bg-gradient-to-r from-amber-500 to-amber-600 text-black font-bold py-4 rounded-2xl transition-all hover:shadow-lg hover:shadow-amber-500/20 uppercase tracking-widest text-sm font-[Barlow_Condensed] cursor-pointer"
-              >
-                분석 결과 보기
-              </button>
+
+              {session && (
+                <>
+                  <div ref={reportRef} className="space-y-4">
+                    <h3 className="text-lg font-bold uppercase tracking-wider font-[Barlow_Condensed]">분석 리포트</h3>
+                    <div className="grid grid-cols-2 gap-3">
+                      <ScoreCard label="종합 점수" score={session.overallScore} />
+                      <ScoreCard label="밸런스 점수" score={session.balanceScore} color="#10b981" />
+                    </div>
+                    <SetChart sets={session.sets} />
+                    {(session.angle === 'front' || session.angle === 'back') && (
+                      <BodyDiagram sets={session.sets} asymmetryDetails={session.asymmetryDetails} />
+                    )}
+                    <FeedbackList sets={session.sets} />
+                  </div>
+                  <ReportExport targetRef={reportRef} />
+                </>
+              )}
             </div>
           ) : loading ? (
             <div className="text-center py-4">

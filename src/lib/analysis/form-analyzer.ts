@@ -79,10 +79,10 @@ export class FormAnalyzer {
     const avgElbow = average(this.elbowAsymSamples);
     const avgHip = average(this.hipAsymSamples);
     const avgElbowWidth = average(this.elbowWidthSamples);
-    // 골반 대비 초과분만 감점 (110% → 1점, 100% 이하 → 0점)
-    const avgKneeGap = Math.max(0, average(this.kneeGapSamples) - 100) / 10;
+    // 골반 대비 초과분만 감점 (140% 이상부터 감점, 자연스러운 11자 허용)
+    const avgKneeGap = Math.max(0, average(this.kneeGapSamples) - 140) / 10;
 
-    // 어깨 20%, 팔꿈치 높이 15%, 골반 10%, 팔꿈치 너비 25%, 다리 밀착 30%
+    // 어깨 20%, 팔꿈치 높이 15%, 골반 10%, 팔꿈치 너비 25%, 다리 반동 30%
     const weightedAsym =
       avgShoulder * 0.20 +
       avgElbow * 0.15 +

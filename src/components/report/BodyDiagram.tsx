@@ -42,8 +42,8 @@ export function BodyDiagram({ sets, asymmetryDetails }: BodyDiagramProps) {
   const svgRef = useRef<SVGSVGElement>(null);
   const d = asymmetryDetails ?? DEFAULT_DETAILS;
 
-  // 다리 간격을 0-15 스케일로 변환 (colorScale과 맞추기)
-  const kneeGapScaled = d.kneeGap / 10;
+  // 다리 간격을 0-15 스케일로 변환 (140% 이하는 정상, 초과분만 반영)
+  const kneeGapScaled = Math.max(0, d.kneeGap - 140) / 10;
 
   useEffect(() => {
     if (!svgRef.current) return;
@@ -116,7 +116,7 @@ export function BodyDiagram({ sets, asymmetryDetails }: BodyDiagramProps) {
       bias: d.elbowWidthBias, biasType: 'width' as const,
     },
     {
-      label: '다리 밀착', weight: '30%', asym: d.kneeGap, deduction: (d.kneeGap / 10) * 3,
+      label: '다리 반동', weight: '30%', asym: d.kneeGap, deduction: (d.kneeGap / 10) * 3,
       bias: 0, biasType: 'gap' as const,
     },
   ];
@@ -180,11 +180,11 @@ export function BodyDiagram({ sets, asymmetryDetails }: BodyDiagramProps) {
                     </span>
                   </div>
                 )}
-                {item.biasType === 'gap' && item.asym > 30 && (
+                {item.biasType === 'gap' && item.asym > 40 && (
                   <div className="flex items-center gap-1.5 ml-4 text-[10px]">
                     <span className="font-mono font-bold text-orange-400">!</span>
                     <span className="text-stone-500">
-                      허벅지를 붙여 정자세를 유지하세요
+                      다리 반동 없이 자연스럽게 늘어뜨리세요
                     </span>
                   </div>
                 )}
