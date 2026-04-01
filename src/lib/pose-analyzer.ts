@@ -5,7 +5,7 @@ import { RepCounter } from './analysis/rep-counter';
 import { FormAnalyzer } from './analysis/form-analyzer';
 
 const MODEL_URL =
-  'https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_lite/float16/1/pose_landmarker_lite.task';
+  'https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_full/float16/1/pose_landmarker_full.task';
 
 export interface RepResult {
   count: number;
@@ -135,6 +135,10 @@ export class PoseAnalyzer {
 
   getBalanceScore(): number {
     return this.formAnalyzer.computeBalanceScore();
+  }
+
+  getAsymmetryDetails(): { shoulder: number; elbow: number; hip: number } {
+    return this.formAnalyzer.getAsymmetryDetails();
   }
 
   destroy(): void {

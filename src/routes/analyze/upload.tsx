@@ -63,7 +63,7 @@ function UploadAnalysisPage() {
     setAnalyzing(true);
 
     const duration = video.duration;
-    const fps = 10;
+    const fps = 15;
     const frameStep = 1 / fps;
     let currentTime = 0;
 

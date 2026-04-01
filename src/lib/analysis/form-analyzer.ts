@@ -54,8 +54,19 @@ export class FormAnalyzer {
     // 어깨 비중 50%, 팔꿈치 30%, 엉덩이 20%
     const weightedAsym = avgShoulder * 0.5 + avgElbow * 0.3 + avgHip * 0.2;
 
-    // 비대칭 0% → 100점, 20%+ → 0점
-    return Math.max(0, Math.round(100 - weightedAsym * 5));
+    // 비대칭 0% → 100점, 10%+ → 0점 (더 민감하게)
+    return Math.max(0, Math.round(100 - weightedAsym * 10));
+  }
+
+  /**
+   * 부위별 비대칭 상세 데이터 반환 (리포트용)
+   */
+  getAsymmetryDetails(): { shoulder: number; elbow: number; hip: number } {
+    return {
+      shoulder: average(this.shoulderAsymSamples),
+      elbow: average(this.elbowAsymSamples),
+      hip: average(this.hipAsymSamples),
+    };
   }
 }
 
