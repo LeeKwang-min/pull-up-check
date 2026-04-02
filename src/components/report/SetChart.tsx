@@ -52,20 +52,20 @@ export function SetChart({ sets }: SetChartProps) {
       .attr('fill', '#D97706');
 
     g.append('g').attr('transform', `translate(0,${height})`).call(d3.axisBottom(x))
-      .selectAll('text').attr('fill', '#A8A29E').style('font-size', '11px');
+      .selectAll('text').attr('fill', '#78716C').style('font-size', '11px');
 
     g.append('g').call(d3.axisLeft(y).ticks(5))
-      .selectAll('text').attr('fill', '#A8A29E').style('font-size', '11px');
+      .selectAll('text').attr('fill', '#78716C').style('font-size', '11px');
 
-    svg.selectAll('.domain, .tick line').attr('stroke', '#44403C');
+    svg.selectAll('.domain, .tick line').attr('stroke', '#D6D3D1');
   }, [sets]);
 
   return (
-    <div className="bg-stone-800 rounded-2xl p-4 border border-amber-500/10">
-      <h3 className="text-sm font-semibold text-stone-300 mb-2">세트별 분석</h3>
-      <div className="flex gap-4 text-xs text-stone-400 mb-2">
+    <div className="surface-card rounded-2xl p-4">
+      <h3 className="text-sm font-semibold text-stone-700 mb-2">세트별 퍼포먼스</h3>
+      <div className="flex gap-4 text-xs text-stone-500 mb-2">
         <span className="flex items-center gap-1"><span className="w-3 h-3 bg-amber-500 rounded-sm inline-block" /> 횟수</span>
-        <span className="flex items-center gap-1"><span className="w-3 h-3 rounded-full inline-block" style={{ background: '#D97706' }} /> 자세 점수</span>
+        <span className="flex items-center gap-1"><span className="w-3 h-3 rounded-full inline-block" style={{ background: '#D97706' }} /> 폼 점수</span>
       </div>
       <svg ref={svgRef} width="360" height="200" className="w-full" />
     </div>

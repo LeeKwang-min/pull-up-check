@@ -9,7 +9,7 @@ function getOptions(el: HTMLElement) {
   const rect = el.getBoundingClientRect();
   const pad = 16;
   return {
-    backgroundColor: '#0c0a09',
+    backgroundColor: '#F5F5F4',
     pixelRatio: 2,
     width: rect.width + pad * 2,
     height: rect.height + pad * 2,
@@ -42,7 +42,7 @@ export function ReportExport({ targetRef }: ReportExportProps) {
           setTimeout(() => URL.revokeObjectURL(url), 60_000);
         }
       } catch {
-        alert('이미지 저장에 실패했습니다. 스크린샷을 이용해 주세요.');
+        alert('이미지 저장에 실패했습니다. 스크린샷으로 대신 저장해 주세요.');
       }
     } finally {
       setSaving(false);
@@ -69,16 +69,16 @@ export function ReportExport({ targetRef }: ReportExportProps) {
       <button
         onClick={handleSaveImage}
         disabled={saving}
-        className="flex-1 surface-card text-stone-300 font-medium py-3 rounded-xl text-sm cursor-pointer hover:bg-stone-800/50 active:scale-[0.97] transition-all disabled:opacity-40"
+        className="flex-1 surface-card text-stone-600 font-medium py-3 rounded-xl text-sm cursor-pointer hover:bg-stone-50 active:scale-[0.97] transition-all disabled:opacity-40"
       >
-        {saving ? '저장 중...' : '이미지 저장'}
+        {saving ? '이미지 생성 중...' : '이미지로 저장'}
       </button>
       {typeof navigator !== 'undefined' && 'share' in navigator && (
         <button
           onClick={handleShare}
-          className="flex-1 bg-gradient-to-r from-amber-500 to-amber-600 text-stone-950 font-bold py-3 rounded-xl text-sm cursor-pointer uppercase tracking-wider font-[Barlow_Condensed] active:scale-[0.97] transition-all shadow-lg shadow-amber-500/15"
+          className="flex-1 bg-gradient-to-r from-amber-500 to-amber-600 text-white font-bold py-3 rounded-xl text-sm cursor-pointer uppercase tracking-wider font-[Barlow_Condensed] active:scale-[0.97] transition-all shadow-lg shadow-amber-500/20"
         >
-          공유
+          결과 공유
         </button>
       )}
     </div>
