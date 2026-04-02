@@ -85,7 +85,21 @@ function processFrame(imageData: ImageBitmap, timestamp: number): void {
   );
   const repCompleted = repCounter.update(leftAngle, rightAngle, timestamp);
 
-  const issues = formAnalyzer.analyze(landmarks);
+  const issues = formAnalyzer.analyze(landmarks, repCounter.phase);
+
+  // 불완전 ROM 실시간 경고
+  if (repCounter.incompleteRomDetected) {
+    post({
+      type: 'form-alert',
+      issue: {
+        type: 'incomplete_rom',
+        severity: 'high',
+        detail: '불완전 ROM: 팔꿈치가 90° 이하로 굽혀지지 않았습니다',
+        values: {},
+      },
+    });
+    repCounter.incompleteRomDetected = false;
+  }
 
   for (const issue of issues) {
     if (issue.severity === 'high' || issue.severity === 'medium') {
@@ -94,6 +108,23 @@ function processFrame(imageData: ImageBitmap, timestamp: number): void {
   }
 
   if (repCompleted) {
+    // Chin-over-bar 체크
+    const chinIssue = formAnalyzer.getChinOverBarIssue();
+    if (chinIssue) issues.push(chinIssue);
+
+    // 하강 속도 체크
+    if (repCounter.eccentricTooFast) {
+      issues.push({
+        type: 'fast_eccentric',
+        severity: 'medium',
+        detail: `하강이 너무 빠릅니다 (${(repCounter.lastEccentricMs / 1000).toFixed(1)}초)`,
+        values: { eccentricMs: repCounter.lastEccentricMs },
+      });
+      repCounter.eccentricTooFast = false;
+    }
+
+    formAnalyzer.resetRepState();
+
     const formScore = formAnalyzer.computeFormScore(issues);
     post({
       type: 'rep',

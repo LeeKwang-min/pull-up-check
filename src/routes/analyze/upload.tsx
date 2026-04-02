@@ -253,7 +253,36 @@ function UploadAnalysisPage() {
   return (
     <div className="pt-8 pb-4 space-y-4">
       {!videoUrl ? (
-        <VideoDropzone onFileSelected={handleFileSelected} />
+        <>
+          <VideoDropzone onFileSelected={handleFileSelected} />
+          <div className="bg-stone-50 border border-stone-200 rounded-2xl px-5 py-4 space-y-3">
+            <h4 className="text-sm font-bold text-stone-700 font-[Barlow_Condensed] uppercase tracking-wider">
+              촬영 가이드
+            </h4>
+            <ul className="space-y-2.5 text-[13px] text-stone-600">
+              <li className="flex gap-2.5">
+                <span className="shrink-0 w-5 h-5 rounded-full bg-amber-100 text-amber-600 flex items-center justify-center text-[11px] font-bold mt-0.5">1</span>
+                <span><strong className="text-stone-800">바(Bar)~골반까지</strong> 반드시 화면에 나오게 촬영하세요. 렙 카운팅과 어깨·팔꿈치 비대칭을 분석합니다.</span>
+              </li>
+              <li className="flex gap-2.5">
+                <span className="shrink-0 w-5 h-5 rounded-full bg-amber-100 text-amber-600 flex items-center justify-center text-[11px] font-bold mt-0.5">2</span>
+                <span><strong className="text-stone-800">발끝까지 보이면</strong> 정밀 분석이 가능합니다. 키핑, 몸통 흔들림, 다리 벌어짐까지 체크합니다.</span>
+              </li>
+              <li className="flex gap-2.5">
+                <span className="shrink-0 w-5 h-5 rounded-full bg-amber-100 text-amber-600 flex items-center justify-center text-[11px] font-bold mt-0.5">3</span>
+                <span><strong className="text-stone-800">카메라 고정</strong> + 2~3m 거리에서 촬영하세요. 역광을 피하면 정확도가 올라갑니다.</span>
+              </li>
+              <li className="flex gap-2.5">
+                <span className="shrink-0 w-5 h-5 rounded-full bg-stone-200 text-stone-500 flex items-center justify-center text-[11px] font-bold mt-0.5">!</span>
+                <span>
+                  {angle === 'side'
+                    ? '측면 촬영: 몸통 흔들림과 키핑 감지에 최적화되어 있습니다.'
+                    : `${angle === 'front' ? '정면' : '후면'} 촬영: 좌우 밸런스와 어깨·팔꿈치 대칭을 측정합니다.`}
+                </span>
+              </li>
+            </ul>
+          </div>
+        </>
       ) : (
         <>
           <div className="relative bg-black rounded-2xl overflow-hidden shadow-lg shadow-black/40">

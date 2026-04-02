@@ -28,13 +28,23 @@ export class PoseAnalyzer {
   private repCounter: RepCounter;
   private formAnalyzer: FormAnalyzer;
   private callbacks: PoseAnalyzerCallbacks;
+  private angle: CameraAngle;
   private lastTimestamp = -1;
   private activated = false;
 
   constructor(angle: CameraAngle, callbacks: PoseAnalyzerCallbacks) {
+    this.angle = angle;
     this.repCounter = new RepCounter();
     this.formAnalyzer = new FormAnalyzer(angle);
     this.callbacks = callbacks;
+  }
+
+  /** Pre-check 후 분석 시작 전 내부 상태를 초기화 */
+  reset(): void {
+    this.repCounter = new RepCounter();
+    this.formAnalyzer = new FormAnalyzer(this.angle);
+    this.activated = false;
+    this.lastTimestamp = -1;
   }
 
   async init(): Promise<void> {
@@ -102,7 +112,21 @@ export class PoseAnalyzer {
     if (!this.activated && this.repCounter.phase !== 'idle') {
       this.activated = true;
     }
-    const issues = this.activated ? this.formAnalyzer.analyze(landmarks) : [];
+    const issues = this.activated
+      ? this.formAnalyzer.analyze(landmarks, this.repCounter.phase)
+      : [];
+
+    // 불완전 ROM 실시간 경고
+    if (this.repCounter.incompleteRomDetected) {
+      const romIssue: import('../types/analysis').FormIssue = {
+        type: 'incomplete_rom',
+        severity: 'high',
+        detail: '불완전 ROM: 팔꿈치가 90° 이하로 굽혀지지 않았습니다',
+        values: {},
+      };
+      this.callbacks.onFormAlert?.(romIssue);
+      this.repCounter.incompleteRomDetected = false;
+    }
 
     // 디버그 로깅
     if (repCompleted || prevPhase !== this.repCounter.phase) {
@@ -119,6 +143,23 @@ export class PoseAnalyzer {
     }
 
     if (repCompleted) {
+      // Chin-over-bar 체크
+      const chinIssue = this.formAnalyzer.getChinOverBarIssue();
+      if (chinIssue) issues.push(chinIssue);
+
+      // 하강 속도 체크
+      if (this.repCounter.eccentricTooFast) {
+        issues.push({
+          type: 'fast_eccentric',
+          severity: 'medium',
+          detail: `하강이 너무 빠릅니다 (${(this.repCounter.lastEccentricMs / 1000).toFixed(1)}초)`,
+          values: { eccentricMs: this.repCounter.lastEccentricMs },
+        });
+        this.repCounter.eccentricTooFast = false;
+      }
+
+      this.formAnalyzer.resetRepState();
+
       const formScore = this.formAnalyzer.computeFormScore(issues);
       this.callbacks.onRep?.({
         count: this.repCounter.count,

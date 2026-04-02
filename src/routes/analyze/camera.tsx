@@ -1,6 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router';
 import { useCallback, useRef, useEffect, useState } from 'react';
 import { CameraControls } from '../../components/camera/CameraControls';
+import { CameraGuideOverlay, type PoseReadyLevel } from '../../components/camera/CameraGuideOverlay';
 import { LiveStats } from '../../components/analysis/LiveStats';
 import { LandmarkOverlay } from '../../components/analysis/LandmarkOverlay';
 import { ScoreCard } from '../../components/report/ScoreCard';
@@ -11,7 +12,7 @@ import { ReportExport } from '../../components/report/ReportExport';
 import { useAnalysisStore } from '../../stores/analysis-store';
 import { PoseAnalyzer } from '../../lib/pose-analyzer';
 import { getSession } from '../../lib/db/sessions';
-import type { CameraAngle, Session } from '../../types/analysis';
+import type { CameraAngle, LandmarkSnapshot, Session } from '../../types/analysis';
 
 type SearchParams = { angle: CameraAngle };
 
@@ -22,6 +23,34 @@ export const Route = createFileRoute('/analyze/camera')({
   component: CameraAnalysisPage,
 });
 
+/**
+ * 포즈 위치 판정 (3단계)
+ * - 'none': 랜드마크 부족 또는 프레임 밖
+ * - 'basic': 상체(어깨·팔꿈치·손목) 감지 → 렙 카운팅 + 비대칭 분석 가능
+ * - 'full': 전신(+ 골반·무릎) 감지 → 키핑·흔들림·다리 벌어짐까지 분석 가능
+ */
+function checkPosePosition(lm: LandmarkSnapshot): PoseReadyLevel {
+  const inFrame = (p: { x: number; y: number; visibility: number }) =>
+    p.visibility > 0.5 && p.x > 0.05 && p.x < 0.95 && p.y > 0.02 && p.y < 0.98;
+
+  // 상체 필수 랜드마크 (6개)
+  const upper = [
+    lm.shoulderLeft, lm.shoulderRight,
+    lm.elbowLeft, lm.elbowRight,
+    lm.wristLeft, lm.wristRight,
+  ];
+  const upperOk = upper.filter(inFrame).length >= 5;
+  if (!upperOk) return 'none';
+
+  // 하체 랜드마크 (4개)
+  const lower = [lm.hipLeft, lm.hipRight, lm.kneeLeft, lm.kneeRight];
+  const lowerOk = lower.filter(inFrame).length >= 3;
+
+  return lowerOk ? 'full' : 'basic';
+}
+
+const READY_FRAMES = 6; // ~2 s at 3 fps
+
 function CameraAnalysisPage() {
   const { angle } = Route.useSearch();
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -29,12 +58,19 @@ function CameraAnalysisPage() {
   const animationRef = useRef<number>(0);
   const streamRef = useRef<MediaStream | null>(null);
   const reportRef = useRef<HTMLDivElement>(null);
+  const preCheckTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const isPreCheckingRef = useRef(true);
+  const readyCountRef = useRef(0);
+
   const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [modelReady, setModelReady] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [analysisComplete, setAnalysisComplete] = useState(false);
   const [session, setSession] = useState<Session | null>(null);
   const [facingMode, setFacingMode] = useState<'environment' | 'user'>('environment');
+  const [readyLevel, setReadyLevel] = useState<PoseReadyLevel>('none');
+  const [guideVisible, setGuideVisible] = useState(true);
 
   const {
     isAnalyzing,
@@ -51,38 +87,113 @@ function CameraAnalysisPage() {
     reset,
   } = useAnalysisStore();
 
-  // 카메라 시작 (facingMode 변경 시 재시작)
+  // ── 카메라 스트림 ──
   useEffect(() => {
-    async function startCamera() {
-      // 기존 스트림 정리
-      streamRef.current?.getTracks().forEach((t) => t.stop());
+    streamRef.current?.getTracks().forEach((t) => t.stop());
 
+    async function startCamera() {
       try {
         const stream = await navigator.mediaDevices.getUserMedia({
           video: { facingMode, width: 640, height: 480 },
         });
         streamRef.current = stream;
-        if (videoRef.current) {
-          videoRef.current.srcObject = stream;
-        }
-      } catch (err) {
+        if (videoRef.current) videoRef.current.srcObject = stream;
+      } catch {
         setError('카메라 권한이 필요합니다. 브라우저 설정에서 허용해 주세요.');
       }
     }
 
     startCamera();
-
     return () => {
       streamRef.current?.getTracks().forEach((t) => t.stop());
       streamRef.current = null;
-      cancelAnimationFrame(animationRef.current);
-      analyzerRef.current?.destroy();
-      analyzerRef.current = null;
-      useAnalysisStore.getState().stopAnalysis();
     };
   }, [facingMode]);
 
-  // 분석 루프
+  // ── 모델 로드 + 사전 감지 루프 ──
+  useEffect(() => {
+    let cancelled = false;
+    isPreCheckingRef.current = true;
+    readyCountRef.current = 0;
+
+    async function init() {
+      setLoading(true);
+      setError(null);
+
+      const analyzer = new PoseAnalyzer(angle, {
+        onLandmarks: (data) => updateLandmarks(data),
+        onRep: (result) => {
+          if (!isPreCheckingRef.current) {
+            addRep(result.formScore, result.details, result.tempo, result.rom);
+          }
+        },
+        onFormAlert: (issue) => {
+          if (!isPreCheckingRef.current) addAlert(issue);
+        },
+        onError: (msg) => {
+          setError(msg);
+          setLoading(false);
+        },
+      });
+
+      await analyzer.init();
+      if (cancelled) {
+        analyzer.destroy();
+        return;
+      }
+
+      analyzerRef.current = analyzer;
+      setModelReady(true);
+      setLoading(false);
+
+      // 사전 감지 루프 (~3 fps)
+      function preCheckLoop() {
+        if (cancelled || !isPreCheckingRef.current) return;
+
+        const video = videoRef.current;
+        if (video && video.readyState >= 2 && analyzerRef.current) {
+          analyzerRef.current.processFrame(video, performance.now());
+
+          const lm = useAnalysisStore.getState().landmarks;
+          if (lm) {
+            const level = checkPosePosition(lm);
+            if (level !== 'none') {
+              readyCountRef.current++;
+              if (readyCountRef.current >= READY_FRAMES) setReadyLevel(level);
+            } else {
+              readyCountRef.current = 0;
+              setReadyLevel('none');
+            }
+          }
+        }
+        preCheckTimerRef.current = setTimeout(preCheckLoop, 333);
+      }
+      preCheckLoop();
+    }
+
+    init();
+    return () => {
+      cancelled = true;
+      clearTimeout(preCheckTimerRef.current);
+      analyzerRef.current?.destroy();
+      analyzerRef.current = null;
+    };
+  }, [angle, addRep, addAlert, updateLandmarks]);
+
+  // ── 가이드 가시성 관리 ──
+  useEffect(() => {
+    if (isAnalyzing || analysisComplete) {
+      setGuideVisible(false);
+      return;
+    }
+    if (readyLevel !== 'none') {
+      const timer = setTimeout(() => setGuideVisible(false), 2500);
+      return () => clearTimeout(timer);
+    }
+    setGuideVisible(true);
+  }, [readyLevel, isAnalyzing, analysisComplete]);
+
+  // ── 분석 루프 ──
   useEffect(() => {
     if (!isAnalyzing) {
       cancelAnimationFrame(animationRef.current);
@@ -101,32 +212,29 @@ function CameraAnalysisPage() {
     return () => cancelAnimationFrame(animationRef.current);
   }, [isAnalyzing]);
 
-  const handleStartStop = useCallback(async () => {
+  // ── 컴포넌트 언마운트 정리 ──
+  useEffect(() => {
+    return () => {
+      cancelAnimationFrame(animationRef.current);
+      useAnalysisStore.getState().stopAnalysis();
+    };
+  }, []);
+
+  const handleStartStop = useCallback(() => {
     if (isAnalyzing) {
       cancelAnimationFrame(animationRef.current);
-      analyzerRef.current?.destroy();
-      analyzerRef.current = null;
       stopAnalysis();
     } else {
-      setLoading(true);
-      setError(null);
+      if (!analyzerRef.current || !modelReady) return;
 
-      const analyzer = new PoseAnalyzer(angle, {
-        onLandmarks: (data) => updateLandmarks(data),
-        onRep: (result) => addRep(result.formScore, result.details, result.tempo, result.rom),
-        onFormAlert: (issue) => addAlert(issue),
-        onError: (msg) => {
-          setError(msg);
-          setLoading(false);
-        },
-      });
+      isPreCheckingRef.current = false;
+      clearTimeout(preCheckTimerRef.current);
+      analyzerRef.current.reset();
 
-      await analyzer.init();
-      analyzerRef.current = analyzer;
-      setLoading(false);
+      setGuideVisible(false);
       startAnalysis();
     }
-  }, [isAnalyzing, angle, startAnalysis, stopAnalysis, addRep, addAlert, updateLandmarks]);
+  }, [isAnalyzing, modelReady, startAnalysis, stopAnalysis]);
 
   const handleFlipCamera = useCallback(() => {
     setFacingMode((prev) => (prev === 'environment' ? 'user' : 'environment'));
@@ -143,14 +251,12 @@ function CameraAnalysisPage() {
     }
     cancelAnimationFrame(animationRef.current);
 
-    // 밸런스 점수 & 비대칭 상세 계산 (destroy 전에)
     const balanceScore = analyzerRef.current?.getBalanceScore() ?? 0;
     const asymmetryDetails = analyzerRef.current?.getAsymmetryDetails();
     analyzerRef.current?.destroy();
     analyzerRef.current = null;
     stopAnalysis();
 
-    // 카메라 스트림 중지
     streamRef.current?.getTracks().forEach((t) => t.stop());
     streamRef.current = null;
 
@@ -231,6 +337,13 @@ function CameraAnalysisPage() {
             height={dimensions.height}
           />
         </div>
+        <CameraGuideOverlay
+          angle={angle}
+          visible={guideVisible}
+          readyLevel={readyLevel}
+          width={dimensions.width}
+          height={dimensions.height}
+        />
         <button
           onClick={handleFlipCamera}
           disabled={isAnalyzing}

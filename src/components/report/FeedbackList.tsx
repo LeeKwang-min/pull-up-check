@@ -90,6 +90,33 @@ function generateFeedback({
     }
   }
 
+  // --- 공통 이슈 피드백 (각도 무관) ---
+  const allIssuesCommon = sets.flatMap((s) => s.reps.flatMap((r) => r.issues));
+
+  const shrugIssues = allIssuesCommon.filter((i) => i.type === 'shoulder_shrug');
+  if (shrugIssues.length > 0) {
+    feedback.push({
+      text: `어깨 으쓱 ${shrugIssues.length}회 감지 — 어깨를 아래로 내리고 견갑골을 조인 상태에서 시작하세요.`,
+      severity: shrugIssues.length > 3 ? 'high' : 'medium',
+    });
+  }
+
+  const chinIssues = allIssuesCommon.filter((i) => i.type === 'chin_not_over_bar');
+  if (chinIssues.length > 0) {
+    feedback.push({
+      text: `${repsTotal}회 중 ${chinIssues.length}회에서 턱이 바 위로 올라가지 않았습니다. 끝까지 당겨 올리세요.`,
+      severity: chinIssues.length / repsTotal > 0.5 ? 'high' : 'medium',
+    });
+  }
+
+  const eccentricIssues = allIssuesCommon.filter((i) => i.type === 'fast_eccentric');
+  if (eccentricIssues.length > 0) {
+    feedback.push({
+      text: `빠른 하강 ${eccentricIssues.length}회 — 내려올 때 2~3초간 천천히 제어하면 근비대 효과가 높아집니다.`,
+      severity: eccentricIssues.length > 3 ? 'high' : 'medium',
+    });
+  }
+
   // --- ROM 분석 (측면) ---
   if (angle === 'side') {
     const allRoms = sets.flatMap((s) => s.reps.map((r) => r.rom).filter((r) => r > 0));

@@ -1,4 +1,5 @@
 import type { LandmarkSnapshot, FormIssue } from '../../../types/analysis';
+import type { RepPhase } from '../rep-counter';
 
 const SWING_THRESHOLD = 0.08;
 
@@ -8,13 +9,17 @@ export function resetSideState(): void {
   baselineHipX = null;
 }
 
-export function analyzeSide(landmarks: LandmarkSnapshot): FormIssue[] {
+export function analyzeSide(landmarks: LandmarkSnapshot, phase?: RepPhase): FormIssue[] {
   const issues: FormIssue[] = [];
 
   const hipMidX = (landmarks.hipLeft.x + landmarks.hipRight.x) / 2;
 
-  if (baselineHipX === null) {
+  // extended 진입 시점에서 baseline 갱신 (매달린 안정 자세 기준)
+  if (phase === 'extended') {
     baselineHipX = hipMidX;
+  }
+
+  if (baselineHipX === null) {
     return issues;
   }
 

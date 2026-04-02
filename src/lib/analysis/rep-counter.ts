@@ -1,10 +1,11 @@
 export type RepPhase = 'idle' | 'extended' | 'flexing' | 'flexed' | 'extending';
 
-const EXTENDED_THRESHOLD = 150;
+const EXTENDED_THRESHOLD = 158;
 const FLEXED_THRESHOLD = 90;
 const HYSTERESIS = 10;
 const MIN_REP_DURATION_MS = 800;
-const MAX_REP_DURATION_MS = 5000;  // 5초 초과 → 비정상 렙
+const MAX_REP_DURATION_MS = 8000;  // 8초 초과 → 비정상 렙 (템포 풀업 허용)
+const FAST_ECCENTRIC_MS = 800;     // 하강이 800ms 미만 → 너무 빠름
 const SMOOTHING_WINDOW = 7;
 const MAX_LR_DIFF = 50;
 const MIN_PHASE_FRAMES = 3;
@@ -16,7 +17,14 @@ export class RepCounter {
   lastTempo = 0;
   lastRom = 0;
 
+  /** flexing에서 90° 미달로 되돌아갈 때 true */
+  incompleteRomDetected = false;
+  /** extending→extended 구간이 FAST_ECCENTRIC_MS 미만일 때 true */
+  eccentricTooFast = false;
+  lastEccentricMs = 0;
+
   private repStartTime = 0;
+  private extendingStartTime = 0;
   private minAngle = 180;
   private lastRepCompletedTime = 0;
   private angleBuffer: number[] = [];
@@ -118,8 +126,24 @@ export class RepCounter {
       this.skipNextRep = true;
     }
 
+    // flexing에서 90° 미달로 되돌아감 → 불완전 ROM
+    if (nextPhase === 'extended' && this.phase === 'flexing') {
+      this.incompleteRomDetected = true;
+    }
+
+    // extending 시작 시점 기록 (하강 속도 측정용)
+    if (nextPhase === 'extending' && this.phase !== 'extending') {
+      this.extendingStartTime = timestamp;
+    }
+
     // extended로 진입하면서 extending에서 온 경우 = 렙 완료 후보
     if (nextPhase === 'extended' && this.phase === 'extending') {
+      // 하강 속도 체크
+      const eccentricDuration = timestamp - this.extendingStartTime;
+      this.lastEccentricMs = eccentricDuration;
+      if (eccentricDuration > 0 && eccentricDuration < FAST_ECCENTRIC_MS) {
+        this.eccentricTooFast = true;
+      }
       if (this.skipNextRep) {
         this.skipNextRep = false;
       } else {
@@ -158,7 +182,11 @@ export class RepCounter {
     this.phase = 'idle';
     this.lastTempo = 0;
     this.lastRom = 0;
+    this.incompleteRomDetected = false;
+    this.eccentricTooFast = false;
+    this.lastEccentricMs = 0;
     this.repStartTime = 0;
+    this.extendingStartTime = 0;
     this.minAngle = 180;
     this.lastRepCompletedTime = 0;
     this.angleBuffer = [];

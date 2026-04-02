@@ -2,7 +2,7 @@ import type { LandmarkSnapshot, FormIssue, Severity } from '../../../types/analy
 import { calculateAsymmetry } from '../angle-calculator';
 
 // 임계값을 낮춰서 미세한 불균형도 감지
-const SHOULDER_THRESHOLD = 3;
+const SHOULDER_THRESHOLD = 4.5;
 const ELBOW_THRESHOLD = 4;
 const HIP_THRESHOLD = 3;
 const KNEE_GAP_THRESHOLD = 140;    // 골반 너비 대비 140% 이상 벌어지면 감지 (11자 자연 늘어짐 허용)
@@ -28,7 +28,7 @@ export function analyzeFrontBack(landmarks: LandmarkSnapshot): FormIssue[] {
     const sideKo = shoulderAsym > 0 ? '왼쪽' : '오른쪽';
     issues.push({
       type: 'asymmetry',
-      severity: classifySeverity(Math.abs(shoulderAsym), 3, 8, 15),
+      severity: classifySeverity(Math.abs(shoulderAsym), 4.5, 8, 15),
       detail: `${sideKo} 어깨가 ${Math.abs(shoulderAsym).toFixed(1)}% 낮습니다`,
       values: { shoulderAsymmetry: shoulderAsym, leftSide: shoulderAsym > 0 ? 1 : 0 },
     });

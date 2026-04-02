@@ -1,4 +1,5 @@
 import type { CameraAngle, LandmarkSnapshot, FormIssue, AsymmetryDetails } from '../../types/analysis';
+import type { RepPhase } from './rep-counter';
 import { analyzeFrontBack } from './rule-sets/front-back';
 import { analyzeSide, resetSideState } from './rule-sets/side';
 import { computeFormScore } from './rule-sets/shared';
@@ -12,6 +13,8 @@ class RunningAvg {
   get avg() { return this.count > 0 ? this.sum / this.count : 0; }
   get empty() { return this.count === 0; }
 }
+
+const SHOULDER_SHRUG_THRESHOLD = 0.10;
 
 export class FormAnalyzer {
   private angle: CameraAngle;
@@ -33,16 +36,61 @@ export class FormAnalyzer {
   private swingMagnitudeSum = 0;
   private kippingFrames = 0;
 
+  // ── Chin-over-bar 렙 단위 추적 ──
+  private chinReachedBar = false;
+
   constructor(angle: CameraAngle) {
     this.angle = angle;
     resetSideState();
   }
 
-  analyze(landmarks: LandmarkSnapshot): FormIssue[] {
-    if (this.angle === 'front' || this.angle === 'back') {
-      return this.analyzeFrontBackFrame(landmarks);
+  analyze(landmarks: LandmarkSnapshot, phase?: RepPhase): FormIssue[] {
+    const issues: FormIssue[] = [];
+
+    // ── 공통 체크: Shoulder Shrug (각도 무관) ──
+    const shoulderCenterY = (landmarks.shoulderLeft.y + landmarks.shoulderRight.y) / 2;
+    const noseShoulderDist = Math.abs(landmarks.nose.y - shoulderCenterY);
+    if (landmarks.nose.visibility > 0.5 && noseShoulderDist < SHOULDER_SHRUG_THRESHOLD) {
+      issues.push({
+        type: 'shoulder_shrug',
+        severity: noseShoulderDist < 0.05 ? 'high' : 'medium',
+        detail: `어깨 으쓱 감지 (코-어깨 거리: ${(noseShoulderDist * 100).toFixed(1)}%)`,
+        values: { noseShoulderDistance: noseShoulderDist },
+      });
     }
-    return this.analyzeSideFrame(landmarks);
+
+    // ── 공통 체크: Chin-over-bar 추적 ──
+    const wristY = (landmarks.wristLeft.y + landmarks.wristRight.y) / 2;
+    if (landmarks.nose.visibility > 0.5 && landmarks.nose.y < wristY) {
+      this.chinReachedBar = true;
+    }
+
+    // ── 각도별 분석 ──
+    if (this.angle === 'front' || this.angle === 'back') {
+      issues.push(...this.analyzeFrontBackFrame(landmarks));
+    } else {
+      issues.push(...this.analyzeSideFrame(landmarks, phase));
+    }
+
+    return issues;
+  }
+
+  /** 렙 완료 시 chin-over-bar 미달 이슈 반환 */
+  getChinOverBarIssue(): FormIssue | null {
+    if (!this.chinReachedBar) {
+      return {
+        type: 'chin_not_over_bar',
+        severity: 'medium',
+        detail: '턱이 바 위로 올라가지 않았습니다',
+        values: {},
+      };
+    }
+    return null;
+  }
+
+  /** 렙 완료 후 렙 단위 상태 초기화 */
+  resetRepState(): void {
+    this.chinReachedBar = false;
   }
 
   private analyzeFrontBackFrame(landmarks: LandmarkSnapshot): FormIssue[] {
@@ -74,9 +122,9 @@ export class FormAnalyzer {
     return analyzeFrontBack(landmarks);
   }
 
-  private analyzeSideFrame(landmarks: LandmarkSnapshot): FormIssue[] {
+  private analyzeSideFrame(landmarks: LandmarkSnapshot, phase?: RepPhase): FormIssue[] {
     this.sideFrameCount++;
-    const issues = analyzeSide(landmarks);
+    const issues = analyzeSide(landmarks, phase);
 
     for (const issue of issues) {
       if (issue.type === 'body_swing') {

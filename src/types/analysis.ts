@@ -21,7 +21,7 @@ export interface LandmarkSnapshot {
 
 export type CameraAngle = 'front' | 'back' | 'side';
 export type InputMode = 'camera' | 'upload';
-export type FormIssueType = 'asymmetry' | 'kipping' | 'incomplete_rom' | 'body_swing' | 'leg_spread' | 'elbow_width';
+export type FormIssueType = 'asymmetry' | 'kipping' | 'incomplete_rom' | 'body_swing' | 'leg_spread' | 'elbow_width' | 'shoulder_shrug' | 'chin_not_over_bar' | 'fast_eccentric';
 export type Severity = 'low' | 'medium' | 'high';
 
 export interface FormIssue {
