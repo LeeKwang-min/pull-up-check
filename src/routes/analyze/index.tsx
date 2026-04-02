@@ -16,8 +16,8 @@ function AnalyzePage() {
     <div className="pt-10 pb-4 space-y-8">
       {/* Header */}
       <div>
-        <h2 className="text-2xl font-bold uppercase tracking-wider font-[Barlow_Condensed]">새 분석</h2>
-        <p className="text-sm text-stone-500 mt-1">촬영 각도와 입력 방식을 선택하세요</p>
+        <h2 className="text-2xl font-bold uppercase tracking-wider font-[Barlow_Condensed] text-stone-800">분석 설정</h2>
+        <p className="text-sm text-stone-500 mt-1">어떤 각도에서, 어떻게 촬영했나요?</p>
       </div>
 
       {/* Angle Selection */}
@@ -33,24 +33,24 @@ function AnalyzePage() {
           <Link
             to="/analyze/camera"
             search={{ angle }}
-            className="group surface-card rounded-2xl p-5 text-center cursor-pointer hover:bg-stone-800/50 active:scale-[0.97] transition-all"
+            className="group surface-card rounded-2xl p-5 text-center cursor-pointer hover:bg-stone-50 active:scale-[0.97] transition-all"
           >
-            <div className="w-12 h-12 rounded-xl bg-amber-500/10 flex items-center justify-center mx-auto mb-3 group-hover:bg-amber-500/15 transition-colors">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#F59E0B" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+            <div className="w-12 h-12 rounded-xl bg-amber-50 flex items-center justify-center mx-auto mb-3 group-hover:bg-amber-100 transition-colors">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#D97706" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
             </div>
-            <div className="font-semibold text-sm text-stone-200">실시간 카메라</div>
-            <div className="text-[11px] text-stone-500 mt-1">실시간 측정</div>
+            <div className="font-semibold text-sm text-stone-700">실시간 카메라</div>
+            <div className="text-[11px] text-stone-400 mt-1">지금 바로 촬영하며 분석</div>
           </Link>
           <Link
             to="/analyze/upload"
             search={{ angle }}
-            className="group surface-card rounded-2xl p-5 text-center cursor-pointer hover:bg-stone-800/50 active:scale-[0.97] transition-all"
+            className="group surface-card rounded-2xl p-5 text-center cursor-pointer hover:bg-stone-50 active:scale-[0.97] transition-all"
           >
-            <div className="w-12 h-12 rounded-xl bg-amber-500/10 flex items-center justify-center mx-auto mb-3 group-hover:bg-amber-500/15 transition-colors">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#F59E0B" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+            <div className="w-12 h-12 rounded-xl bg-amber-50 flex items-center justify-center mx-auto mb-3 group-hover:bg-amber-100 transition-colors">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#D97706" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
             </div>
-            <div className="font-semibold text-sm text-stone-200">영상 업로드</div>
-            <div className="text-[11px] text-stone-500 mt-1">녹화 영상 분석</div>
+            <div className="font-semibold text-sm text-stone-700">영상 업로드</div>
+            <div className="text-[11px] text-stone-400 mt-1">이미 찍어둔 영상이 있다면</div>
           </Link>
         </div>
       </div>

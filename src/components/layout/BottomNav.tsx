@@ -8,7 +8,7 @@ const navItems = [
 ] as const;
 
 function NavIcon({ name, active }: { name: string; active: boolean }) {
-  const color = active ? '#F59E0B' : '#78716C';
+  const color = active ? '#D97706' : '#A8A29E';
   const sw = active ? '2.2' : '1.8';
   switch (name) {
     case 'home':
@@ -30,10 +30,7 @@ export function BottomNav() {
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-50 pb-[env(safe-area-inset-bottom)]">
-      {/* Top edge glow */}
-      <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-amber-500/20 to-transparent" />
-
-      <div className="bg-stone-950/90 backdrop-blur-2xl border-t border-stone-800/60">
+      <div className="bg-white/90 backdrop-blur-2xl border-t border-stone-200">
         <div className="mx-auto max-w-lg flex justify-around items-center h-16 px-2">
           {navItems.map((item) => {
             const isActive = item.to === '/' ? currentPath === '/' : currentPath.startsWith(item.to);
@@ -44,7 +41,7 @@ export function BottomNav() {
                 className="relative flex flex-col items-center gap-1 py-2 px-4 cursor-pointer"
               >
                 <NavIcon name={item.icon} active={isActive} />
-                <span className={`text-[10px] font-medium tracking-wide transition-colors ${isActive ? 'text-amber-500' : 'text-stone-600'}`}>
+                <span className={`text-[10px] font-medium tracking-wide transition-colors ${isActive ? 'text-amber-600' : 'text-stone-400'}`}>
                   {item.label}
                 </span>
                 {isActive && (

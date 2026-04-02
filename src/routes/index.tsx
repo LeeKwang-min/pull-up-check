@@ -7,6 +7,13 @@ export const Route = createFileRoute('/')({
   component: HomePage,
 });
 
+function scoreGrade(score: number): { label: string; color: string } {
+  if (score >= 90) return { label: 'EXCELLENT', color: 'text-amber-500' };
+  if (score >= 80) return { label: 'GREAT', color: 'text-amber-500' };
+  if (score >= 60) return { label: 'GOOD', color: 'text-stone-500' };
+  return { label: 'NEEDS WORK', color: 'text-stone-400' };
+}
+
 function HomePage() {
   const [latest, setLatest] = useState<Session | null>(null);
 
@@ -24,77 +31,90 @@ function HomePage() {
       })()
     : null;
 
+  const grade = score !== null ? scoreGrade(score) : null;
+
   return (
-    <div className="flex flex-col min-h-[calc(100vh-6rem)] pt-10 pb-4">
+    <div className="flex flex-col min-h-[calc(100vh-6rem)] pt-8 pb-4">
       {/* Header */}
-      <div className="mb-8">
-        <p className="section-label mb-1">오늘의 턱걸이</p>
-        <h1 className="text-3xl font-bold tracking-tight">
-          풀업 <span className="text-amber-500">체크</span>
-        </h1>
+      <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl bg-amber-100 flex items-center justify-center">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#D97706" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          </div>
+          <span className="text-xl font-bold tracking-tight text-stone-800">풀업 체크</span>
+        </div>
+        <div className="w-10 h-10 rounded-full bg-stone-200 flex items-center justify-center">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#78716C" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+        </div>
       </div>
 
-      {/* Score Card */}
-      <div className="surface-card glow-amber rounded-2xl p-6 relative overflow-hidden">
-        {/* Decorative gradient blob */}
-        <div className="absolute -top-16 -right-16 w-40 h-40 rounded-full bg-amber-500/[0.04] blur-3xl pointer-events-none" />
-        <div className="absolute -bottom-8 -left-8 w-24 h-24 rounded-full bg-amber-500/[0.03] blur-2xl pointer-events-none" />
+      {/* Score Section */}
+      <div className="flex flex-col items-center flex-1 justify-center -mt-4">
+        <p className="section-label mb-2">LATEST ANALYSIS</p>
+        <h1 className="text-2xl font-bold tracking-tight text-stone-800 mb-10">오늘의 턱걸이</h1>
 
-        <div className="relative">
-          {/* Main score */}
-          <div className="flex items-baseline gap-1.5">
-            <span className="text-5xl font-bold text-amber-500 leading-none font-[Barlow_Condensed] tabular-nums">
-              {score ?? '--'}
+        {/* Large Score Circle */}
+        <div className="score-circle flex flex-col items-center justify-center mb-10">
+          <span className="text-6xl font-bold text-stone-800 font-[Barlow_Condensed] tabular-nums leading-none">
+            {score ?? '--'}
+          </span>
+          {grade && (
+            <span className={`text-sm font-bold uppercase tracking-widest mt-2 font-[Barlow_Condensed] ${grade.color}`}>
+              {grade.label}
             </span>
-            <span className="text-base text-stone-500 font-medium">점</span>
+          )}
+        </div>
+
+        {/* Stats Cards */}
+        <div className="grid grid-cols-3 gap-3 w-full">
+          <div className="surface-card rounded-2xl py-4 px-3 flex flex-col items-center">
+            <div className="w-10 h-10 rounded-xl bg-amber-50 flex items-center justify-center mb-2">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#D97706" strokeWidth="2" strokeLinecap="round"><rect x="3" y="12" width="4" height="9" rx="1"/><rect x="10" y="8" width="4" height="13" rx="1"/><rect x="17" y="4" width="4" height="17" rx="1"/></svg>
+            </div>
+            <span className="text-xl font-bold font-[Barlow_Condensed] tabular-nums text-stone-800">
+              {totalReps ?? '--'}
+            </span>
+            <span className="text-[10px] font-semibold text-stone-400 uppercase tracking-wider mt-0.5">TOTAL REPS</span>
           </div>
-          <p className="text-xs text-stone-500 mt-1.5">최근 종합 점수</p>
-
-          {/* Divider */}
-          <div className="h-px bg-gradient-to-r from-stone-800 via-stone-700/50 to-transparent my-5" />
-
-          {/* Stats row */}
-          <div className="grid grid-cols-3 gap-4">
-            <div>
-              <div className="text-lg font-bold font-[Barlow_Condensed] tabular-nums text-stone-100">
-                {totalReps ?? '--'}
-              </div>
-              <div className="text-[11px] text-stone-500 mt-0.5">총 횟수</div>
+          <div className="surface-card rounded-2xl py-4 px-3 flex flex-col items-center">
+            <div className="w-10 h-10 rounded-xl bg-amber-50 flex items-center justify-center mb-2">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#D97706" strokeWidth="2" strokeLinecap="round"><line x1="4" y1="8" x2="20" y2="8"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="16" x2="20" y2="16"/></svg>
             </div>
-            <div>
-              <div className="text-lg font-bold font-[Barlow_Condensed] tabular-nums text-stone-100">
-                {setCount ?? '--'}
-              </div>
-              <div className="text-[11px] text-stone-500 mt-0.5">세트</div>
+            <span className="text-xl font-bold font-[Barlow_Condensed] tabular-nums text-stone-800">
+              {setCount ?? '--'}
+            </span>
+            <span className="text-[10px] font-semibold text-stone-400 uppercase tracking-wider mt-0.5">SETS</span>
+          </div>
+          <div className="surface-card rounded-2xl py-4 px-3 flex flex-col items-center">
+            <div className="w-10 h-10 rounded-xl bg-amber-50 flex items-center justify-center mb-2">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#D97706" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
             </div>
-            <div>
-              <div className="text-lg font-bold font-[Barlow_Condensed] tabular-nums text-stone-100">
-                {avgTempo ? `${avgTempo}s` : '--'}
-              </div>
-              <div className="text-[11px] text-stone-500 mt-0.5">평균 템포</div>
-            </div>
+            <span className="text-xl font-bold font-[Barlow_Condensed] tabular-nums text-stone-800">
+              {avgTempo ? `${avgTempo}s` : '--'}
+            </span>
+            <span className="text-[10px] font-semibold text-stone-400 uppercase tracking-wider mt-0.5">AVG TEMPO</span>
           </div>
         </div>
       </div>
 
       {/* CTAs */}
-      <div className="flex flex-col gap-3 mt-auto pt-10">
+      <div className="flex flex-col gap-3 mt-8">
         <Link
           to="/analyze"
-          className="relative overflow-hidden bg-gradient-to-r from-amber-500 to-amber-600 text-stone-950 font-bold py-4 rounded-2xl text-center uppercase tracking-widest text-sm font-[Barlow_Condensed] cursor-pointer shadow-lg shadow-amber-500/15 active:scale-[0.98] transition-transform"
+          className="bg-gradient-to-r from-amber-500 to-amber-600 text-white font-bold py-4 rounded-2xl text-center uppercase tracking-widest text-sm font-[Barlow_Condensed] cursor-pointer shadow-lg shadow-amber-500/20 active:scale-[0.98] transition-transform"
         >
-          분석 시작
+          자세 분석하기
         </Link>
         <Link
           to="/history"
-          className="surface-card text-stone-300 font-semibold py-3.5 rounded-2xl text-center text-sm cursor-pointer hover:bg-stone-800/60 active:scale-[0.98] transition-all"
+          className="surface-card text-stone-500 font-semibold py-3.5 rounded-2xl text-center text-sm cursor-pointer hover:bg-stone-50 active:scale-[0.98] transition-all"
         >
-          기록 보기
+          지난 기록 비교하기
         </Link>
       </div>
 
-      <p className="text-[11px] text-stone-600 text-center mt-6 leading-relaxed">
-        모든 처리는 기기에서 이루어집니다. 영상 데이터는 서버로 전송되지 않습니다.
+      <p className="text-[11px] text-stone-400 text-center mt-6 leading-relaxed">
+        영상은 기기에서만 처리됩니다. 서버 전송 없음.
       </p>
     </div>
   );

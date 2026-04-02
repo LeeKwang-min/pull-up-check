@@ -66,7 +66,7 @@ function CameraAnalysisPage() {
           videoRef.current.srcObject = stream;
         }
       } catch (err) {
-        setError('카메라 접근이 거부되었습니다. 권한을 허용해 주세요.');
+        setError('카메라 권한이 필요합니다. 브라우저 설정에서 허용해 주세요.');
       }
     }
 
@@ -185,10 +185,10 @@ function CameraAnalysisPage() {
     return (
       <div className="pt-10 pb-4 space-y-5">
         <div className="space-y-4">
-          <h3 className="text-2xl font-bold uppercase tracking-wider font-[Barlow_Condensed]">분석 리포트</h3>
+          <h3 className="text-2xl font-bold uppercase tracking-wider font-[Barlow_Condensed] text-stone-800">분석 리포트</h3>
           <div className="grid grid-cols-2 gap-3">
             <ScoreCard label="종합 점수" score={session.overallScore} />
-            <ScoreCard label={session.angle === 'side' ? '폼 안정성' : '밸런스 점수'} score={session.balanceScore} color="#10b981" />
+            <ScoreCard label={session.angle === 'side' ? '폼 안정성' : '좌우 밸런스'} score={session.balanceScore} color="#10b981" />
           </div>
           <div ref={reportRef} className="space-y-4">
             <SetChart sets={session.sets} />
@@ -248,7 +248,7 @@ function CameraAnalysisPage() {
       </div>
 
       {error && (
-        <div className="bg-red-500/8 border border-red-500/15 rounded-xl px-4 py-3 text-[13px] text-red-400">
+        <div className="bg-red-50 border border-red-200 rounded-xl px-4 py-3 text-[13px] text-red-600">
           {error}
         </div>
       )}
@@ -257,8 +257,8 @@ function CameraAnalysisPage() {
 
       {loading ? (
         <div className="text-center py-6">
-          <div className="text-sm text-stone-300 font-medium">MediaPipe 모델 로딩 중...</div>
-          <div className="text-[11px] text-stone-500 mt-1.5">첫 실행 시 모델 다운로드가 필요합니다</div>
+          <div className="text-sm text-stone-600 font-medium">자세 인식 모델 준비 중...</div>
+          <div className="text-[11px] text-stone-400 mt-1.5">최초 1회만 다운로드됩니다 (약 10MB)</div>
         </div>
       ) : (
         <CameraControls

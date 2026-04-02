@@ -14,9 +14,9 @@ export function LiveStats({ repCount, currentSet, alerts }: LiveStatsProps) {
       <div className="flex items-center justify-between">
         <div className="flex items-baseline gap-1.5">
           <span className="text-4xl font-bold tabular-nums text-amber-500 font-[Barlow_Condensed] leading-none">{repCount}</span>
-          <span className="text-xs text-stone-500">회</span>
+          <span className="text-xs text-stone-400">회</span>
         </div>
-        <div className="text-sm font-semibold text-stone-400 uppercase tracking-wider font-[Barlow_Condensed]">
+        <div className="text-sm font-semibold text-stone-500 uppercase tracking-wider font-[Barlow_Condensed]">
           세트 {currentSet}
         </div>
       </div>
@@ -24,8 +24,8 @@ export function LiveStats({ repCount, currentSet, alerts }: LiveStatsProps) {
         <div
           className={`mt-3 text-xs px-3 py-2 rounded-lg truncate ${
             latestAlert.severity === 'high'
-              ? 'bg-red-500/10 text-red-400 border border-red-500/15'
-              : 'bg-yellow-500/10 text-yellow-400 border border-yellow-500/15'
+              ? 'bg-red-50 text-red-600 border border-red-200'
+              : 'bg-yellow-50 text-yellow-700 border border-yellow-200'
           }`}
         >
           {latestAlert.detail}
